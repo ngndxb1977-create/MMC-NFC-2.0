@@ -326,7 +326,7 @@ def load_price_list(file_path):
 # --------------------------------------------------
 # FILE CONSTANTS
 # --------------------------------------------------
-FILE_VEHICLES = "NFC New VRI Project (2) (2).xlsx"
+FILE_VEHICLES = "NFC New VRI Project-6.xlsx"
 FILE_SUPPLEMENT = "Bank & RMC Details.xlsx"
 FILE_ACCESSORIES = "Accessories_List.xlsx"
 FILE_SALES_SPECIALISTS = "Sales_Specialists.xlsx"
