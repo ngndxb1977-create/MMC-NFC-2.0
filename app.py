@@ -581,26 +581,12 @@ base_vehicle_price
 # Dynamic Insurance Calculation from Insurance Sheet
 code_clean = selected_option_code.strip()
 name_clean = str(selected_name)
-display_vri_price = u19_valuation_base * 3.15 * 1.05 / 100.0
 if code_clean in INSURANCE_MASTER:
-ins_rule = INSURANCE_MASTER[code_clean]
-calc_ins = (u19_valuation_base * ins_rule["pct_rate"] + ins_rule["fixed_amount"]) * ins_rule["vat_multiplier"]
-display_ins_price = max(calc_ins, ins_rule["min_premium"])
-else:
-if code_clean.startswith(('PR', 'HLP')) or code_clean in [
-"OTF03", "OTP03", "OTF06", "OTP06", "OTP06-01",
-"OTF08", "OTP08", "G03", "G05", "G06", "G08",
-"G09", "G10", "G12", "P03", "P06", "P12", "G31"
-]:
-display_ins_price = (u19_valuation_base * 0.03 + 510) * 1.05
-elif code_clean.startswith(('H', 'P', 'MOP', 'MOG')) and any(
-num in code_clean for num in ["57", "59", "61", "62", "64"]
-):
-display_ins_price = (u19_valuation_base * 0.0275 + 510) * 1.05
-elif code_clean.startswith('EH') and any(num in code_clean for num in ["40", "41", "43"]):
-display_ins_price = (u19_valuation_base * 0.03 + 450) * 1.05
-else:
-display_ins_price = 3690.0 if "Xpander" in name_clean or "Destinator" in name_clean else 3625.0
+            ins_rule = INSURANCE_MASTER[code_clean]
+            calc_ins = (u19_valuation_base * ins_rule["pct_rate"] + ins_rule["fixed_amount"]) * ins_rule["vat_multiplier"]
+            display_ins_price = max(calc_ins, ins_rule["min_premium"])
+        else:
+            display_ins_price = 0.0
 is_vri_selected = st.checkbox(
 f"Vehicle Replacement Insurance (VRI) (+AED {display_vri_price:,.2f})",
 value=False,
