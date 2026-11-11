@@ -150,7 +150,8 @@ def load_master_workbook(file_path):
         "discounts": {},
         "reservation_fees": {},
         "insurance": {},
-        "rmc": {}
+        "rmc": {},
+        "rmc_df": None
     }
     if not os.path.exists(file_path):
         st.error(f"Master workbook not found: {file_path}")
@@ -277,8 +278,8 @@ def load_master_workbook(file_path):
     rmc_sheet = find_sheet_name(xls, ["RMC"])
     if rmc_sheet:
         df_rmc = pd.read_excel(xls, sheet_name=rmc_sheet)
+        data["rmc_df"] = df_rmc
         df_rmc.columns = [str(c).strip() for c in df_rmc.columns]
-        # Columns E:H correspond to indices 4, 5, 6, 7 (0-based)
         rmc_header_keys = [str(c).strip() for c in df_rmc.columns[4:8]] if len(df_rmc.columns) >= 8 else ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
         data["rmc"]["headers"] = rmc_header_keys
         
@@ -349,6 +350,7 @@ DISCOUNT_MASTER = MASTER_DATA["discounts"]
 RESERVATION_FEES_MASTER = MASTER_DATA["reservation_fees"]
 INSURANCE_MASTER = MASTER_DATA["insurance"]
 RMC_RULES = MASTER_DATA["rmc"]
+RMC_RAW_DF = MASTER_DATA["rmc_df"]
 SALES_SPECIALISTS_MASTER = load_sales_specialists_master(FILE_SALES_SPECIALISTS)
 
 if "view_state" not in st.session_state:
@@ -503,45 +505,58 @@ else:
         else:
             st.warning("ACESSORIES sheet not found or empty.")
 
-        if RMC_RULES:
+        if RMC_RULES and RMC_RAW_DF is not None is not None and not RMC_RAW_DF.empty:
             rmc_header_keys = RMC_RULES.get("headers", ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"])
             rmc_dropdown_options = ["NO"] + rmc_header_keys
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
             
-            # Implements EXACT Excel Rule: =IF(C16="NO",0,XLOOKUP(TRIM(B2),TRIM(RMC!$A:$A),INDEX(RMC!$E:$H,,MATCH(TRIM(B16),RMC!$E$1:$H$1,0))))
+            # Exact equivalent of Excel formula:
+            # =IF(C16="NO", 0, XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), INDEX(RMC!$E:$H, , MATCH(TRIM(B16), RMC!$E$1:$H$1, 0))))
+            # Here B2 corresponds to Variant AS IN SAP (`selected_variant_sap`) or Option Code if preferred, matching column A of RMC sheet.
             if chosen_rmc != "NO":
-                b2_trimmed = str(selected_variant_sap).strip().upper()
-                b16_trimmed = str(chosen_rmc).strip().upper()
-                
-                matched_row_dict = None
-                for k, v in RMC_RULES.items():
-                    if k == "headers":
-                        continue
-                    if k.strip().upper() == b2_trimmed:
-                        matched_row_dict = v
-                        break
-                
-                if not matched_row_dict:
-                    # Fallback partial check
-                    for k, v in RMC_RULES.items():
-                        if k == "headers":
-                            continue
-                        if b2_trimmed in k.strip().upper() or k.strip().upper() in b2_trimmed:
-                            matched_row_dict = v
-                            break
-                            
-                if not matched_row_dict and len(RMC_RULES) > 1:
-                    first_real_key = [k for k in RMC_RULES.keys() if k != "headers"][0]
-                    matched_row_dict = RMC_RULES[first_real_key]
+                b2_val = str(selected_variant_sap).strip()
+                b16_val = str(chosen_rmc).strip()
                 
                 rmc_base_val = 0.0
-                if matched_row_dict:
-                    for hk, hv in matched_row_dict.items():
-                        if hk.strip().upper() == b16_trimmed:
-                            rmc_base_val = hv
-                            break
-                
-                # RMC is added to accessories breakdown as Base Price, but full cost includes 5% VAT multiplier
+                try:
+                    df_r = RMC_RAW_DF.copy()
+                    # Column A is index 0
+                    col_a_trimmed = df_r.iloc[:, 0].astype(str).str.strip()
+                    matched_rows = df_r[col_a_trimmed.str.upper() == b2_val.upper()]
+                    
+                    if matched_rows.empty:
+                        # Fallback case-insensitive partial match on column A
+                        matched_rows = df_r[col_a_trimmed.str.upper().str.contains(b2_val.upper()) | df_r.iloc[:, 0].astype(str).str.upper().str.contains(str(selected_option_code).strip().upper())]
+                    
+                    if not matched_rows.empty:
+                        target_row = matched_rows.iloc[0]
+                        # Match columns E:H headers (indices 4 to 7)
+                        header_cols = [str(c).strip() for c in df_r.columns[4:8]]
+                        matched_col_idx = None
+                        for idx, h_name in enumerate(header_cols):
+                            if h_name.upper() == b16_val.upper():
+                                matched_col_idx = 4 + idx
+                                break
+                        if matched_col_idx is not None and len(target_row) > matched_col_idx:
+                            rmc_base_val = safe_float(target_row.iloc[matched_col_idx])
+                        else:
+                            # Fallback using RMC_RULES dictionary lookup if direct column index fails
+                            variant_key = str(target_row.iloc[0]).strip().upper()
+                            if variant_key in RMC_RULES:
+                                rmc_base_val = RMC_RULES[variant_key].get(b16_val, 0.0)
+                    else:
+                        # If row lookup fails, check dictionary fallback
+                        for k, v in RMC_RULES.items():
+                            if k == "headers": continue
+                            if str(selected_option_code).strip().upper() in k.upper() or k.upper() in str(selected_option_code).strip().upper():
+                                rmc_base_val = v.get(b16_val, 0.0)
+                                break
+                        if rmc_base_val == 0.0 and len(RMC_RULES) > 1:
+                            first_k = [k for k in RMC_RULES.keys() if k != "headers"][0]
+                            rmc_base_val = RMC_RULES[first_k].get(b16_val, 0.0)
+                except Exception as e:
+                    rmc_base_val = 0.0
+
                 rmc_selected_cost += rmc_base_val * 1.05
                 checked_addons_list.append({
                     "name": f"Routine Maintenance Contract ({chosen_rmc})", 
@@ -916,7 +931,7 @@ elif st.session_state.view_state == "summary":
                 .details-section {{
                     display: flex;
                     justify-content: space-between;
-                    background: #F4F0EA !important;
+      background: #F4F0EA !important;
                     padding: 12px 15px;
                     border-radius: 8px;
                     margin-bottom: 15px;
@@ -1109,6 +1124,6 @@ elif st.session_state.view_state == "summary":
             label="📥 Download HTML For PDF/PRINT",
             data=html_content,
             file_name=f"Mitsubishi_Financial_Summary_{selected_option_code}.html",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            mime="text/html",
             use_container_width=True
         )
