@@ -527,60 +527,64 @@ else:
         st.markdown("---")
         st.subheader("➕ Custom Accessories Selection")
         acc_selected_price = 0.0
-        ceramic_selected_price = 0.0
-Use code with caution.
-foppfgoldpackage_selected_price = 0.0
-warranty_selected_price = 0.0
-rmc_selected_cost = 0.0
-checked_addons_list = []
-if ACCESSORIES_MASTER:
-acc_options_list = list(ACCESSORIES_MASTER.keys())
-selected_accessories = st.multiselect("Select Accessories:", acc_options_list)
-for acc_name in selected_accessories:
-price_val = ACCESSORIES_MASTER[acc_name]
-display_name = acc_name
-if "FOPPF" in acc_name.upper() or "GOLD PACKAGE" in acc_name.upper():
-display_name = "FO PPF GOLD PACKAGE"
-foppfgoldpackage_selected_price += price_val
-elif "CERAMIC" in acc_name.upper() and "WINDOW" in acc_name.upper():
-ceramic_selected_price += price_val
-elif "WARRANTY" in acc_name.upper():
-warranty_selected_price += price_val
-elif "RMC" in acc_name.upper():
-rmc_selected_cost += price_val
-else:
-acc_selected_price += price_val
-checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
-else:
-st.warning("ACESSORIES sheet not found or empty.")
-# RMC Dropdown if RMC sheet exists
-if RMC_RULES:
-if selected_option_code in RMC_RULES:
-rmc_keys = list(RMC_RULES[selected_option_code].keys())
-else:
-rmc_keys = ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
-rmc_dropdown_options = ["None"] + rmc_keys
-chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
-if chosen_rmc != "None" and selected_option_code in RMC_RULES:
-rmc_from_sheet = RMC_RULES[selected_option_code].get(chosen_rmc, 0.0)
-rmc_selected_cost += rmc_from_sheet
-checked_addons_list.append({
-"name": f"Routine Maintenance Contract ({chosen_rmc})",
-"price": rmc_from_sheet / 1.05,
-"vat_taxable": True
-})
-# Valuation Base (Incl. VAT) for VRI and Insurance
-u19_valuation_base = (
-base_vehicle_price
-+ acc_selected_price
-+ ceramic_selected_price
-+ foppfgoldpackage_selected_price
-+ warranty_selected_price
-+ (rmc_selected_cost / 1.05)
-) * 1.05
-# Dynamic Insurance Calculation from Insurance Sheet
-code_clean = selected_option_code.strip()
-name_clean = str(selected_name)
+        eramic_selected_price = 0.0
+        foppfgoldpackage_selected_price = 0.0
+        warranty_selected_price = 0.0
+        rmc_selected_cost = 0.0
+        checked_addons_list = []
+
+        if ACCESSORIES_MASTER:
+            acc_options_list = list(ACCESSORIES_MASTER.keys())
+            selected_accessories = st.multiselect("Select Accessories:", acc_options_list)
+            for acc_name in selected_accessories:
+                price_val = ACCESSORIES_MASTER[acc_name]
+                display_name = acc_name
+                if "FOPPF" in acc_name.upper() or "GOLD PACKAGE" in acc_name.upper():
+                    display_name = "FO PPF GOLD PACKAGE"
+                    foppfgoldpackage_selected_price += price_val
+                elif "CERAMIC" in acc_name.upper() and "WINDOW" in acc_name.upper():
+                    ceramic_selected_price += price_val
+                elif "WARRANTY" in acc_name.upper():
+                    warranty_selected_price += price_val
+                elif "RMC" in acc_name.upper():
+                    rmc_selected_cost += price_val
+                else:
+                    acc_selected_price += price_val
+                checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
+        else:
+            st.warning("ACESSORIES sheet not found or empty.")
+
+        # RMC Dropdown if RMC sheet exists
+        if RMC_RULES:
+            if selected_option_code in RMC_RULES:
+                rmc_keys = list(RMC_RULES[selected_option_code].keys())
+            else:
+                rmc_keys = ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
+            rmc_dropdown_options = ["None"] + rmc_keys
+            chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
+            if chosen_rmc != "None" and selected_option_code in RMC_RULES:
+                rmc_from_sheet = RMC_RULES[selected_option_code].get(chosen_rmc, 0.0)
+                rmc_selected_cost += rmc_from_sheet
+                checked_addons_list.append({
+                    "name": f"Routine Maintenance Contract ({chosen_rmc})",
+                    "price": rmc_from_sheet / 1.05,
+                    "vat_taxable": True
+                })
+
+        # Valuation Base (Incl. VAT) for VRI and Insurance
+        u19_valuation_base = (
+            base_vehicle_price
+            + acc_selected_price
+            + ceramic_selected_price
+            + foppfgoldpackage_selected_price
+            + warranty_selected_price
+            + (rmc_selected_cost / 1.05)
+        ) * 1.05
+
+        # Dynamic Insurance Calculation from Insurance Sheet
+        code_clean = selected_option_code.strip()
+        name_clean = str(selected_name)
+        display_vri_price = u19_valuation_base * 3.15 * 1.05 / 100.0
 if code_clean in INSURANCE_MASTER:
             ins_rule = INSURANCE_MASTER[code_clean]
             calc_ins = (u19_valuation_base * ins_rule["pct_rate"] + ins_rule["fixed_amount"]) * ins_rule["vat_multiplier"]
