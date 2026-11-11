@@ -119,7 +119,7 @@ def get_image_base64(image_path):
     if image_path and os.path.exists(image_path):
         with open(image_path, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode()
-        ext = os.path.splitext(image_path)[1].lower().replace('.', '')
+        ext = os.path.splitext(image_path).__getitem__(1).lower().replace('.', '')
         mime_type = "image/jpeg" if ext in ["jpg", "jpeg"] else "image/png"
         return f"data:{mime_type};base64,{encoded_string}"
     return None
@@ -146,7 +146,7 @@ def get_col_by_keyword(row, columns, keywords, fallback_idx=None, default=0.0):
         if all(kw.upper() in col_norm for kw in keywords):
             return safe_float(row.get(col), default=default)
     if fallback_idx is not None and len(row) > fallback_idx:
-        return safe_float(row.iloc[fallback_idx], default=default)
+        return safe_float(row.iloc.__getitem__(fallback_idx), default=default)
     return default
 
 # --------------------------------------------------
@@ -176,21 +176,21 @@ def load_master_workbook(file_path):
         df_mpl.columns = [str(c).strip() for c in df_mpl.columns]
         cols = list(df_mpl.columns)
         for _, row in df_mpl.iterrows():
-            opt_code = str(row.get("OPTION CODE", row.iloc[0] if len(row) > 0 else "")).strip()
-            desc = str(row.get("DESCRIPTION", row.iloc[1] if len(row) > 1 else "")).strip()
-            var_sap = str(row.get("VARIANT AS IN SAP", row.iloc[2] if len(row) > 2 else "")).strip()
+            opt_code = str(row.get("OPTION CODE", row.iloc.__getitem__(0) if len(row) > 0 else "")).strip()
+            desc = str(row.get("DESCRIPTION", row.iloc.__getitem__(1) if len(row) > 1 else "")).strip()
+            var_sap = str(row.get("VARIANT AS IN SAP", row.iloc.__getitem__(2) if len(row) > 2 else "")).strip()
             if not desc or desc.lower() in ["nan", "description"]:
                 continue
 
-            raw_year = str(row.get("MODEL YEAR", row.iloc[10] if len(row) > 10 else "")).strip()
+            raw_year = str(row.get("MODEL YEAR", row.iloc.__getitem__(10) if len(row) > 10 else "")).strip()
             year_match = re.search(r'(20\d{2})', raw_year)
             year_key = year_match.group(1) if year_match else (raw_year if raw_year and raw_year.lower() != "nan" else "2026")
 
-            price_val = safe_float(row.get("PRICE", row.iloc[3] if len(row) > 3 else 0.0))
+            price_val = safe_float(row.get("PRICE", row.iloc.__getitem__(3) if len(row) > 3 else 0.0))
             bm_disc_a = get_col_by_keyword(row, cols, ["BM", "DISCOUNTA"], fallback_idx=4, default=0.0)
             bm_disc_b = get_col_by_keyword(row, cols, ["BM", "DISCOUNTB"], fallback_idx=5, default=0.0)
             l3_upgraded = get_col_by_keyword(row, cols, ["L3"], fallback_idx=6, default=0.0)
-            final_price_val = safe_float(row.get("Final Price", row.iloc[7] if len(row) > 7 else price_val))
+            final_price_val = safe_float(row.get("Final Price", row.iloc.__getitem__(7) if len(row) > 7 else price_val))
             if final_price_val == 0.0 and price_val > 0.0:
                 final_price_val = price_val
 
@@ -215,9 +215,9 @@ def load_master_workbook(file_path):
     if bank_sheet:
         df_bank = pd.read_excel(xls, sheet_name=bank_sheet)
         for _, row in df_bank.iterrows():
-            bank_name = str(row.iloc[0]).strip() if len(row) > 0 else ""
-            bracket_raw = str(row.iloc[1]).strip() if len(row) > 1 else ""
-            roi_raw = row.iloc[2] if len(row) > 2 else None
+            bank_name = str(row.iloc.__getitem__(0)).strip() if len(row) > 0 else ""
+            bracket_raw = str(row.iloc.__getitem__(1)).strip() if len(row) > 1 else ""
+            roi_raw = row.iloc.__getitem__(2) if len(row) > 2 else None
             if not bank_name or bank_name.lower() in ["nan", "bank name"]:
                 continue
             if not bracket_raw or bracket_raw.lower() == "nan":
@@ -237,10 +237,10 @@ def load_master_workbook(file_path):
     if acc_sheet:
         df_acc = pd.read_excel(xls, sheet_name=acc_sheet)
         for _, row in df_acc.iterrows():
-            acc_name = str(row.iloc[0]).strip() if len(row) > 0 else ""
+            acc_name = str(row.iloc.__getitem__(0)).strip() if len(row) > 0 else ""
             if not acc_name or acc_name.lower() in ["nan", "list of accessories"]:
                 continue
-            acc_price = safe_float(row.iloc[1], default=0.0) if len(row) > 1 else 0.0
+            acc_price = safe_float(row.iloc.__getitem__(1), default=0.0) if len(row) > 1 else 0.0
             data["accessories"][acc_name] = acc_price
 
     # 4. DISCOUNT (A: Discount Name, B: Percentage)
@@ -248,11 +248,11 @@ def load_master_workbook(file_path):
     if disc_sheet:
         df_disc = pd.read_excel(xls, sheet_name=disc_sheet)
         for _, row in df_disc.iterrows():
-            disc_name = str(row.iloc[0]).strip() if len(row) > 0 else ""
-            if not disc_name or disc_name.lower() in ["nan", "discount name", "option code"]:
-                continue
-            pct_val = safe_float(row.iloc[1], default=0.0) if len(row) > 1 else 0.0
+            disc_name = str(row.iloc.__getitem__(0)).strip() if len(row) > 0 else ""
 Use code with caution.
+if not disc_name or disc_name.lower() in ["nan", "discount name", "option code"]:
+continue
+pct_val = safe_float(row.iloc.getitem(1), default=0.0) if len(row) > 1 else 0.0
 if pct_val > 1.0:
 pct_val = pct_val / 100.0
 data["discounts"][disc_name] = pct_val
@@ -262,13 +262,13 @@ if res_sheet:
 df_res = pd.read_excel(xls, sheet_name=res_sheet)
 df_res.columns = [str(c).strip() for c in df_res.columns]
 for _, row in df_res.iterrows():
-opt_code = str(row.get("OPTION CODE", row.iloc[0] if len(row) > 0 else "")).strip()
+opt_code = str(row.get("OPTION CODE", row.iloc.getitem(0) if len(row) > 0 else "")).strip()
 if not opt_code or opt_code.lower() in ["nan", "option code"]:
 continue
 if "Reservation Fees" in df_res.columns:
 res_fee = safe_float(row.get("Reservation Fees"), default=1000.0)
 else:
-res_fee = safe_float(row.iloc[10], default=1000.0) if len(row) > 10 else 1000.0
+res_fee = safe_float(row.iloc.getitem(10), default=1000.0) if len(row) > 10 else 1000.0
 data["reservation_fees"][opt_code] = res_fee
 # 6. INSURANCE (A: OPTION CODE ... K: Percentage Rate, L: Fixed Amount, M: Vat Multiplier, N: Minimum Premium)
 ins_sheet = find_sheet_name(xls, ["Insurance", "INSURANCE"])
@@ -276,17 +276,17 @@ if ins_sheet:
 df_ins = pd.read_excel(xls, sheet_name=ins_sheet)
 df_ins.columns = [str(c).strip() for c in df_ins.columns]
 for _, row in df_ins.iterrows():
-opt_code = str(row.get("OPTION CODE", row.iloc[0] if len(row) > 0 else "")).strip()
+opt_code = str(row.get("OPTION CODE", row.iloc.getitem(0) if len(row) > 0 else "")).strip()
 if not opt_code or opt_code.lower() in ["nan", "option code"]:
 continue
-pct_rate = safe_float(row.get("Percentage Rate", row.iloc[10] if len(row) > 10 else 0.0))
+pct_rate = safe_float(row.get("Percentage Rate", row.iloc.getitem(10) if len(row) > 10 else 0.0))
 if pct_rate > 1.0:
 pct_rate = pct_rate / 100.0
-fixed_amt = safe_float(row.get("Fixed Amount", row.iloc[11] if len(row) > 11 else 0.0))
-vat_mult = safe_float(row.get("Vat Multiplier", row.iloc[12] if len(row) > 12 else 1.05), default=1.05)
+fixed_amt = safe_float(row.get("Fixed Amount", row.iloc.getitem(11) if len(row) > 11 else 0.0))
+vat_mult = safe_float(row.get("Vat Multiplier", row.iloc.getitem(12) if len(row) > 12 else 1.05), default=1.05)
 if vat_mult == 0.0:
 vat_mult = 1.05
-min_prem = safe_float(row.get("Minimum Premium", row.iloc[13] if len(row) > 13 else 0.0))
+min_prem = safe_float(row.get("Minimum Premium", row.iloc.getitem(13) if len(row) > 13 else 0.0))
 data["insurance"][opt_code] = {
 "pct_rate": pct_rate,
 "fixed_amount": fixed_amt,
@@ -298,7 +298,7 @@ rmc_sheet = find_sheet_name(xls, ["RMC"])
 if rmc_sheet:
 df_rmc = pd.read_excel(xls, sheet_name=rmc_sheet)
 for _, row in df_rmc.iterrows():
-v_code = str(row.iloc[0]).strip() if len(row) > 0 else ""
+v_code = str(row.iloc.getitem(0)).strip() if len(row) > 0 else ""
 if not v_code or v_code.lower() in ["nan", "variant codes", "option code"]:
 continue
 data["rmc"][v_code] = {
@@ -315,11 +315,11 @@ if os.path.exists(file_path):
 try:
 df = pd.read_excel(file_path)
 for _, row in df.iterrows():
-name = str(row.iloc[0]).strip() if len(row) > 0 else ""
+name = str(row.iloc.getitem(0)).strip() if len(row) > 0 else ""
 if name and name.lower() not in ["nan", "full name"]:
 specialists_dict[name] = {
-"email": str(row.iloc[1]).strip() if len(row) > 1 and pd.notna(row.iloc[1]) else "",
-"mobile": str(row.iloc[2]).strip() if len(row) > 2 and pd.notna(row.iloc[2]) else ""
+"email": str(row.iloc.getitem(1)).strip() if len(row) > 1 and pd.notna(row.iloc.getitem(1)) else "",
+"mobile": str(row.iloc.getitem(2)).strip() if len(row) > 2 and pd.notna(row.iloc.getitem(2)) else ""
 }
 except Exception as e:
 st.error(f"Error loading Sales_Specialists file: {e}")
@@ -426,7 +426,7 @@ else:
             st.error("Selected Description not found in Master Price List.")
             st.stop()
 
-        final_row = filtered_rows[0]
+        final_row = filtered_rows.__getitem__(0)
         selected_variant_sap = final_row["VariantSAP"]
         selected_option_code = final_row["OptionCode"]
         list_vehicle_price = final_row["Price"]
@@ -656,8 +656,7 @@ base_vehicle_price
 calculated_downpayment = full_vehicle_value_including_addons * down_payment_pct
 finance_amount = full_vehicle_value_including_addons - calculated_downpayment
 bank_processing_fee = finance_amount * 0.0105
-st.markdown("
-", unsafe_allow_html=True)
+st.write("")
 if st.button("Generate Summary", use_container_width=True):
 st.session_state.view_state = "summary"
 --------------------------------------------------
@@ -734,7 +733,7 @@ col_s3.metric("Vehicle Finance Amount", f"AED {finance_amount:,.2f}")
 st.markdown("---")
 st.header("2. Loan Installment Breakdowns")
 st.subheader("🟢 Primary Asset Vehicle Financing")
-tenures = [1, 2, 3, 4, 5]
+tenures = list(range(1, 6))
 vehicle_emi_results = []
 for years in tenures:
 months = years * 12
@@ -750,8 +749,7 @@ vehicle_emi_results.append({
 st.table(pd.DataFrame(vehicle_emi_results))
 dp_results = []
 if finance_dp_option:
-st.markdown("
-", unsafe_allow_html=True)
+st.write("")
 st.subheader("🔵 Down Payment Loan Financing Options")
 dp_financed_base = max(0.0, calculated_downpayment - vehicle_reservation_fee)
 dp_options = [
@@ -1101,7 +1099,7 @@ AED {finance_amount:,.2f}
 
 2. Loan Installment Breakdowns
 Primary Asset Vehicle Financing
-{"".join([f"{row['Asset Term (Years)']}{row['Flat ROI %']}AED {finance_amount:,.2f}AED {finance_amount * bank_rate * (int(row['Asset Term (Years)'].split())):,.2f}AED {((finance_amount + (finance_amount * bank_rate * (int(row['Asset Term (Years)'].split())))) / (int(row['Asset Term (Years)'].split()) * 12)):,.2f}" for row in vehicle_emi_results])}
+{"".join([f"{row['Asset Term (Years)']}{row['Flat ROI %']}AED {finance_amount:,.2f}AED {finance_amount * bank_rate * (int(row['Asset Term (Years)'].split().getitem(0))):,.2f}AED {((finance_amount + (finance_amount * bank_rate * (int(row['Asset Term (Years)'].split().getitem(0))))) / (int(row['Asset Term (Years)'].split().getitem(0)) * 12)):,.2f}" for row in vehicle_emi_results])}
 Asset Term (Years)	Flat ROI %	Principal Loan Block	Total Interest Accrued	Monthly Vehicle EMI
 {"Down Payment Loan Financing OptionsTermFinanced BalanceTotal InterestMonthly EMI" + "".join([f"{row['Term']}AED {dp_financed_base:,.2f}AED {float(row['Total Interest'].replace('AED ','').replace(',','')):,.2f}AED {float(row['Monthly EMI'].replace('AED ','').replace(',','')):,.2f}" for row in dp_results]) + "" if dp_results else ""}
 3. Accessories Breakdown
