@@ -276,7 +276,7 @@ def load_master_workbook(file_path):
 
     rmc_sheet = find_sheet_name(xls, ["RMC"])
     if rmc_sheet:
-        data["rmc_df"] = pd.read_excel(xls, sheet_name=rmc_sheet)
+        data["rmc_df"] = pd.read_excel(xls, sheet_name=rmc_sheet, header=None)
     return data
 
 @st.cache_data
@@ -407,7 +407,7 @@ else:
             st.image(resolved_path, caption=f"Mitsubishi {caption_name}", use_container_width=True)
 
         st.markdown("---")
-        st.subheader("🏦 Financial Provider Rates")
+        st.subheader("🏦 Financial ProviderRates")
         if BANK_RULES:
             bank_options = sorted(list(BANK_RULES.keys()))
             selected_bank = st.selectbox("Select Institution:", bank_options)
@@ -457,47 +457,65 @@ else:
                 checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
 
         # ==========================================
-        # EXACT EXCEL RMC LOGIC IMPLEMENTATION:
-        # =IF(C16="NO",0,XLOOKUP(TRIM(B2),TRIM(RMC!$A:$A),INDEX(RMC!$E:$H,,MATCH(TRIM(B16),RMC!$E$1:$H$1,0))))
+        # EXACT EXCEL RMC FORMULA LOGIC MAPPING
+        # Formula: =IF(C16="NO", 0, XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), INDEX(RMC!$E:$H, , MATCH(TRIM(B16), RMC!$E$1:$H$1, 0))))
+        # Where B2 = selected_variant_sap (or Variant/Option Code), B16 = chosen RMC option
         # ==========================================
         if RMC_RAW_DF is not None and not RMC_RAW_DF.empty:
             df_r = RMC_RAW_DF.copy()
-            df_r.columns = [str(c).strip() for c in df_r.columns]
             
-            # Extract header options from row 0 columns E:H (indices 4 to 7) corresponding to RMC!$E$1:$H$1
-            rmc_header_keys = [str(c).strip() for c in df_r.columns[4:8]] if len(df_r.columns) >= 8 else ["RMC-10-40KMS", "RMC-10-60KMS", "RMC-10-70KMS", "RMC-10-100KMS"]
+            # Locate header row containing RMC options (e.g. RMC-10-40KMS, etc.)
+            header_row_idx = 0
+            for r_idx in range(min(5, len(df_r))):
+                row_str = " ".join([str(val).upper() for val in df_r.iloc[r_idx].values])
+                if "RMC-" in row_str or "10-40" in row_str:
+                    header_row_idx = r_idx
+                    break
+            
+            rmc_header_keys = [str(val).strip() for val in df_r.iloc[header_row_idx].values if pd.notna(val) and ("RMC-" in str(val).upper() or "KMS" in str(val).upper())]
+            if not rmc_header_keys and len(df_r.columns) >= 8:
+                rmc_header_keys = [str(df_r.iloc[header_row_idx, c]).strip() for c in range(4, min(8, len(df_r.columns)))]
+            
             rmc_dropdown_options = ["NO"] + rmc_header_keys
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
             
             if chosen_rmc != "NO":
-                b2_val = str(selected_variant_sap).strip()
-                b16_val = str(chosen_rmc).strip()
-                opt_val = str(selected_option_code).strip()
+                b2_val = str(selected_variant_sap).strip().upper()
+                opt_val = str(selected_option_code).strip().upper()
+                b16_val = str(chosen_rmc).strip().upper()
                 
                 rmc_base_val = 0.0
                 try:
-                    # TRIM(RMC!$A:$A) -> Column A (index 0)
-                    col_a_trimmed = df_r.iloc[:, 0].astype(str).str.strip()
+                    # MATCH(TRIM(B16), RMC!$E$1:$H$1, 0) equivalent
+                    target_col_idx = None
+                    for c_idx in range(len(df_r.columns)):
+                        cell_val = str(df_r.iloc[header_row_idx, c_idx]).strip().upper()
+                        if b16_val in cell_val or cell_val in b16_val:
+                            target_col_idx = c_idx
+                            break
                     
-                    # XLOOKUP exact/partial match on TRIM(B2) / Option Code against TRIM(RMC!$A:$A)
-                    match_mask = (col_a_trimmed.str.upper() == b2_val.upper()) | (col_a_trimmed.str.upper() == opt_val.upper())
-                    if not match_mask.any():
-                        match_mask = col_a_trimmed.str.upper().str.contains(b2_val.upper()) | col_a_trimmed.str.upper().str.contains(opt_val.upper())
-                    
-                    if match_mask.any():
-                        matched_row = df_r[match_mask].iloc[0]
+                    # XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), ...) equivalent across Column A, B, C, D
+                    target_row_idx = None
+                    for r_idx in range(header_row_idx + 1, len(df_r)):
+                        row_text_a = str(df_r.iloc[r_idx, 0]).strip().upper() # Col A (Vehicle Model / Variant)
+                        row_text_c = str(df_r.iloc[r_idx, 2] if len(df_r.columns) > 2 else "").strip().upper() # Col C (Variant)
+                        row_text_d = str(df_r.iloc[r_idx, 3] if len(df_r.columns) > 3 else "").strip().upper() # Col D (Option Code)
                         
-                        # MATCH(TRIM(B16), RMC!$E$1:$H$1, 0)
-                        header_cols = [str(c).strip() for c in df_r.columns[4:8]]
-                        matched_col_idx = None
-                        for idx, h_name in enumerate(header_cols):
-                            if h_name.upper() == b16_val.upper() or b16_val.upper() in h_name.upper():
-                                matched_col_idx = 4 + idx
+                        if (b2_val and (b2_val in row_text_a or b2_val in row_text_c or b2_val in row_text_d)) or \
+                           (opt_val and (opt_val in row_text_a or opt_val in row_text_c or opt_val in row_text_d)):
+                            target_row_idx = r_idx
+                            break
+                    
+                    # Fallback row match if specific code wasn't found perfectly
+                    if target_row_idx is None:
+                        for r_idx in range(header_row_idx + 1, len(df_r)):
+                            full_row_str = " ".join([str(df_r.iloc[r_idx, c]).strip().upper() for c in range(len(df_r.columns))])
+                            if selected_name.upper() in full_row_str:
+                                target_row_idx = r_idx
                                 break
-                        
-                        # INDEX(RMC!$E:$H, , MATCH(...))
-                        if matched_col_idx is not None and len(matched_row) > matched_col_idx:
-                            rmc_base_val = safe_float(matched_row.iloc[matched_col_idx])
+
+                    if target_row_idx is not None and target_col_idx is not None:
+                        rmc_base_val = safe_float(df_r.iloc[target_row_idx, target_col_idx])
                 except Exception as e:
                     rmc_base_val = 0.0
 
