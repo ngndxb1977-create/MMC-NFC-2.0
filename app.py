@@ -407,7 +407,7 @@ else:
             st.image(resolved_path, caption=f"Mitsubishi {caption_name}", use_container_width=True)
 
         st.markdown("---")
-        st.subheader("🏦 Financial ProviderRates")
+        st.subheader("🏦 Financial Provider Rates")
         if BANK_RULES:
             bank_options = sorted(list(BANK_RULES.keys()))
             selected_bank = st.selectbox("Select Institution:", bank_options)
@@ -456,15 +456,9 @@ else:
                     acc_selected_price += price_val
                 checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
 
-        # ==========================================
-        # EXACT EXCEL RMC FORMULA LOGIC MAPPING
-        # Formula: =IF(C16="NO", 0, XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), INDEX(RMC!$E:$H, , MATCH(TRIM(B16), RMC!$E$1:$H$1, 0))))
-        # Where B2 = selected_variant_sap (or Variant/Option Code), B16 = chosen RMC option
-        # ==========================================
         if RMC_RAW_DF is not None and not RMC_RAW_DF.empty:
             df_r = RMC_RAW_DF.copy()
             
-            # Locate header row containing RMC options (e.g. RMC-10-40KMS, etc.)
             header_row_idx = 0
             for r_idx in range(min(5, len(df_r))):
                 row_str = " ".join([str(val).upper() for val in df_r.iloc[r_idx].values])
@@ -486,7 +480,6 @@ else:
                 
                 rmc_base_val = 0.0
                 try:
-                    # MATCH(TRIM(B16), RMC!$E$1:$H$1, 0) equivalent
                     target_col_idx = None
                     for c_idx in range(len(df_r.columns)):
                         cell_val = str(df_r.iloc[header_row_idx, c_idx]).strip().upper()
@@ -494,19 +487,17 @@ else:
                             target_col_idx = c_idx
                             break
                     
-                    # XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), ...) equivalent across Column A, B, C, D
                     target_row_idx = None
                     for r_idx in range(header_row_idx + 1, len(df_r)):
-                        row_text_a = str(df_r.iloc[r_idx, 0]).strip().upper() # Col A (Vehicle Model / Variant)
-                        row_text_c = str(df_r.iloc[r_idx, 2] if len(df_r.columns) > 2 else "").strip().upper() # Col C (Variant)
-                        row_text_d = str(df_r.iloc[r_idx, 3] if len(df_r.columns) > 3 else "").strip().upper() # Col D (Option Code)
+                        row_text_a = str(df_r.iloc[r_idx, 0]).strip().upper()
+                        row_text_c = str(df_r.iloc[r_idx, 2] if len(df_r.columns) > 2 else "").strip().upper()
+                        row_text_d = str(df_r.iloc[r_idx, 3] if len(df_r.columns) > 3 else "").strip().upper()
                         
                         if (b2_val and (b2_val in row_text_a or b2_val in row_text_c or b2_val in row_text_d)) or \
                            (opt_val and (opt_val in row_text_a or opt_val in row_text_c or opt_val in row_text_d)):
                             target_row_idx = r_idx
                             break
                     
-                    # Fallback row match if specific code wasn't found perfectly
                     if target_row_idx is None:
                         for r_idx in range(header_row_idx + 1, len(df_r)):
                             full_row_str = " ".join([str(df_r.iloc[r_idx, c]).strip().upper() for c in range(len(df_r.columns))])
@@ -526,7 +517,6 @@ else:
                     "vat_taxable": True
                 })
 
-        # Calculate u19_valuation_base including accessories and RMC base costs before VAT multiplier
         u19_valuation_base = (base_vehicle_price + acc_selected_price + ceramic_selected_price + foppfgoldpackage_selected_price + warranty_selected_price + rmc_selected_cost) * 1.05
 
         code_clean = selected_option_code.strip()
@@ -565,9 +555,13 @@ else:
         excel_addons_total = acc_selected_price + ceramic_selected_price + foppfgoldpackage_selected_price + warranty_selected_price + vri_calculated_cost + vehicle_insurance_cost + rmc_selected_cost
         total_vat_charges = (base_vehicle_price + acc_selected_price + ceramic_selected_price + foppfgoldpackage_selected_price + warranty_selected_price + rmc_selected_cost) * 0.05
         full_vehicle_value_including_addons = base_vehicle_price + excel_addons_total + total_vat_charges
-        calculated_downpayment = full_vehicle_value_including_addons * down_payment_pct
+        
+        # ==========================================
+        # CEILING ROUNDING APPLIED (MATH.CEIL)
+        # ==========================================
+        calculated_downpayment = float(math.ceil(full_vehicle_value_including_addons * down_payment_pct))
         finance_amount = full_vehicle_value_including_addons - calculated_downpayment
-        bank_processing_fee = finance_amount * 0.0105
+        bank_processing_fee = float(math.ceil(finance_amount * 0.0105))
 
         st.write("")
         if st.button("Generate Summary", use_container_width=True):
