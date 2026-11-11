@@ -249,13 +249,12 @@ def load_master_workbook(file_path):
         df_disc = pd.read_excel(xls, sheet_name=disc_sheet)
         for _, row in df_disc.iterrows():
             disc_name = str(row.iloc.__getitem__(0)).strip() if len(row) > 0 else ""
-Use code with caution.
-if not disc_name or disc_name.lower() in ["nan", "discount name", "option code"]:
-continue
-pct_val = safe_float(row.iloc.getitem(1), default=0.0) if len(row) > 1 else 0.0
-if pct_val > 1.0:
-pct_val = pct_val / 100.0
-data["discounts"][disc_name] = pct_val
+            if not disc_name or disc_name.lower() in ["nan", "discount name", "option code"]:
+                continue
+            pct_val = safe_float(row.iloc.__getitem__(1), default=0.0) if len(row) > 1 else 0.0
+            if pct_val > 1.0:
+                pct_val = pct_val / 100.0
+            data["discounts"][disc_name] = pct_val
 # 5. RESERVATION FEES (A: OPTION CODE ... K: Reservation Fees)
 res_sheet = find_sheet_name(xls, ["Reservation Fees", "RESERVATION FEES"])
 if res_sheet:
