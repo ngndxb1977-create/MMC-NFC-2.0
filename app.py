@@ -384,9 +384,6 @@ else:
         st.write(f"**Option Code:** {selected_option_code}")
         st.write(f"**List Price:** AED {list_vehicle_price:,.2f}")
 
-        # ==========================================
-        # DISCOUNT LOGIC & INPUTS
-        # ==========================================
         standard_discounts = ["None", "Esaad", "Fazaa", "Humat Alwatan", "Emirates Platinum", "Permissible-1", "Permissible-2", "Special Discount", "Custom Discount"]
         disc_options_list = ["None"]
         for d in standard_discounts:
@@ -477,6 +474,9 @@ else:
                     acc_selected_price += price_val
                 checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
 
+        # ==========================================
+        # EXACT MODEL-BASED RMC LOOKUP (Independent of Model Year)
+        # ==========================================
         if RMC_RAW_DF is not None and not RMC_RAW_DF.empty:
             df_r = RMC_RAW_DF.copy()
             
@@ -495,8 +495,7 @@ else:
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
             
             if chosen_rmc != "NO":
-                b2_val = str(selected_variant_sap).strip().upper()
-                opt_val = str(selected_option_code).strip().upper()
+                model_target = str(selected_name).strip().upper()
                 b16_val = str(chosen_rmc).strip().upper()
                 
                 rmc_base_val = 0.0
@@ -510,21 +509,10 @@ else:
                     
                     target_row_idx = None
                     for r_idx in range(header_row_idx + 1, len(df_r)):
-                        row_text_a = str(df_r.iloc[r_idx, 0]).strip().upper()
-                        row_text_c = str(df_r.iloc[r_idx, 2] if len(df_r.columns) > 2 else "").strip().upper()
-                        row_text_d = str(df_r.iloc[r_idx, 3] if len(df_r.columns) > 3 else "").strip().upper()
-                        
-                        if (b2_val and (b2_val in row_text_a or b2_val in row_text_c or b2_val in row_text_d)) or \
-                           (opt_val and (opt_val in row_text_a or opt_val in row_text_c or opt_val in row_text_d)):
+                        row_model = str(df_r.iloc[r_idx, 0]).strip().upper()
+                        if model_target in row_model or row_model in model_target:
                             target_row_idx = r_idx
                             break
-                    
-                    if target_row_idx is None:
-                        for r_idx in range(header_row_idx + 1, len(df_r)):
-                            full_row_str = " ".join([str(df_r.iloc[r_idx, c]).strip().upper() for c in range(len(df_r.columns))])
-                            if selected_name.upper() in full_row_str:
-                                target_row_idx = r_idx
-                                break
 
                     if target_row_idx is not None and target_col_idx is not None:
                         rmc_base_val = safe_float(df_r.iloc[target_row_idx, target_col_idx])
