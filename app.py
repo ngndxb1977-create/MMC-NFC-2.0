@@ -277,16 +277,28 @@ def load_master_workbook(file_path):
     rmc_sheet = find_sheet_name(xls, ["RMC"])
     if rmc_sheet:
         df_rmc = pd.read_excel(xls, sheet_name=rmc_sheet)
+        # Normalize column names for robust matching
+        df_rmc.columns = [str(c).strip() for c in df_rmc.columns]
         for _, row in df_rmc.iterrows():
             v_code = str(row.iloc[0]).strip() if len(row) > 0 else ""
             if not v_code or v_code.lower() in ["nan", "variant codes", "option code"]:
                 continue
-            data["rmc"][v_code] = {
-                "RMC-10-40": safe_float(row.get("RMC-10-40", 0.0)),
-                "RMC-10-60": safe_float(row.get("RMC-10-60", 0.0)),
-                "RMC-10-70": safe_float(row.get("RMC-10-70", 0.0)),
-                "RMC-10-100": safe_float(row.get("RMC-10-100", 0.0)),
-            }
+            
+            # Extract RMC values dynamically mapping columns containing rmc keywords
+            rmc_entry = {}
+            for col in df_rmc.columns:
+                col_upper = col.upper()
+                if "RMC" in col_upper:
+                    rmc_entry[col.strip()] = safe_float(row.get(col, 0.0))
+            
+            if not rmc_entry:
+                rmc_entry = {
+                    "RMC-10-40": safe_float(row.get("RMC-10-40", 0.0)),
+                    "RMC-10-60": safe_float(row.get("RMC-10-60", 0.0)),
+                    "RMC-10-70": safe_float(row.get("RMC-10-70", 0.0)),
+                    "RMC-10-100": safe_float(row.get("RMC-10-100", 0.0)),
+                }
+            data["rmc"][v_code.upper()] = rmc_entry
     return data
 
 @st.cache_data
@@ -497,22 +509,30 @@ else:
             st.warning("ACESSORIES sheet not found or empty.")
 
         if RMC_RULES:
-            if selected_option_code in RMC_RULES:
-                rmc_keys = list(RMC_RULES[selected_option_code].keys())
-            else:
-                first_key = list(RMC_RULES.keys())[0] if RMC_RULES else None
-                rmc_keys = list(RMC_RULES[first_key].keys()) if first_key else ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
-                
+            # Flexible key lookup by matching uppercase variant codes or taking fallback profile
+            matched_rmc_dict = None
+            clean_opt_code = selected_option_code.strip().upper()
+            
+            for k, v in RMC_RULES.items():
+                if clean_opt_code in k.upper() or k.upper() in clean_opt_code:
+                    matched_rmc_dict = v
+                    break
+            
+            if not matched_rmc_dict and RMC_RULES:
+                matched_rmc_dict = list(RMC_RULES.values())[0]
+
+            rmc_keys = list(matched_rmc_dict.keys()) if matched_rmc_dict else ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
             rmc_dropdown_options = ["None"] + rmc_keys
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
             
-            if chosen_rmc != "None":
-                rmc_from_sheet = 0.0
-                if selected_option_code in RMC_RULES:
-                    rmc_from_sheet = RMC_RULES[selected_option_code].get(chosen_rmc, 0.0)
-                elif RMC_RULES:
-                    first_key = list(RMC_RULES.keys())[0]
-                    rmc_from_sheet = RMC_RULES[first_key].get(chosen_rmc, 0.0)
+            if chosen_rmc != "None" and matched_rmc_dict:
+                rmc_from_sheet = matched_rmc_dict.get(chosen_rmc, 0.0)
+                if rmc_from_sheet == 0.0:
+                    # Case-insensitive lookup fallback for keys
+                    for r_key, r_val in matched_rmc_dict.items():
+                        if r_key.strip().upper() == chosen_rmc.strip().upper():
+                            rmc_from_sheet = r_val
+                            break
                 
                 rmc_selected_cost += rmc_from_sheet
                 checked_addons_list.append({
