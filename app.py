@@ -5,6 +5,7 @@ import os
 import re
 import io
 import base64
+import math
 
 st.set_page_config(
     page_title="Mitsubishi Financial Matrix Calculator",
@@ -499,22 +500,40 @@ else:
             if selected_option_code in RMC_RULES:
                 rmc_keys = list(RMC_RULES[selected_option_code].keys())
             else:
-                rmc_keys = ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
+                first_key = list(RMC_RULES.keys())[0] if RMC_RULES else None
+                rmc_keys = list(RMC_RULES[first_key].keys()) if first_key else ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
+                
             rmc_dropdown_options = ["None"] + rmc_keys
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
-            if chosen_rmc != "None" and selected_option_code in RMC_RULES:
-                rmc_from_sheet = RMC_RULES[selected_option_code].get(chosen_rmc, 0.0)
+            
+            if chosen_rmc != "None":
+                rmc_from_sheet = 0.0
+                if selected_option_code in RMC_RULES:
+                    rmc_from_sheet = RMC_RULES[selected_option_code].get(chosen_rmc, 0.0)
+                elif RMC_RULES:
+                    first_key = list(RMC_RULES.keys())[0]
+                    rmc_from_sheet = RMC_RULES[first_key].get(chosen_rmc, 0.0)
+                
                 rmc_selected_cost += rmc_from_sheet
-                checked_addons_list.append({"name": f"Routine Maintenance Contract ({chosen_rmc})", "price": rmc_from_sheet / 1.05, "vat_taxable": True})
+                checked_addons_list.append({
+                    "name": f"Routine Maintenance Contract ({chosen_rmc})", 
+                    "price": rmc_from_sheet / 1.05, 
+                    "vat_taxable": True
+                })
 
+        # Calculate u19_valuation_base AFTER collecting all accessories and RMC costs so it includes them fully
         u19_valuation_base = (base_vehicle_price + acc_selected_price + ceramic_selected_price + foppfgoldpackage_selected_price + warranty_selected_price + (rmc_selected_cost / 1.05)) * 1.05
 
         code_clean = selected_option_code.strip()
-        display_vri_price = u19_valuation_base * 3.15 * 1.05 / 100.0
+        
+        # Apply math.ceil to round VRI up to the next full figure based on u19_valuation_base
+        display_vri_price = float(math.ceil(u19_valuation_base * 3.15 * 1.05 / 100.0))
+        
         if code_clean in INSURANCE_MASTER:
             ins_rule = INSURANCE_MASTER[code_clean]
             calc_ins = (u19_valuation_base * ins_rule["pct_rate"] + ins_rule["fixed_amount"]) * ins_rule["vat_multiplier"]
-            display_ins_price = max(calc_ins, ins_rule["min_premium"])
+            # Apply math.ceil to round Insurance up to the next full figure based on u19_valuation_base
+            display_ins_price = float(math.ceil(max(calc_ins, ins_rule["min_premium"])))
         else:
             display_ins_price = 0.0
 
