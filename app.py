@@ -276,8 +276,7 @@ def load_master_workbook(file_path):
 
     rmc_sheet = find_sheet_name(xls, ["RMC"])
     if rmc_sheet:
-        df_rmc = pd.read_excel(xls, sheet_name=rmc_sheet)
-        data["rmc_df"] = df_rmc
+        data["rmc_df"] = pd.read_excel(xls, sheet_name=rmc_sheet)
     return data
 
 @st.cache_data
@@ -458,7 +457,7 @@ else:
                 checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
 
         # ==========================================
-        # EXACT EXCEL RMC LOGIC IMPLEMENTATION
+        # EXACT EXCEL RMC LOGIC IMPLEMENTATION (Fixed Sheet Loader)
         # IF(C16="NO", 0, XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), INDEX(RMC!$E:$H, , MATCH(TRIM(B16), RMC!$E$1:$H$1, 0))))
         # ==========================================
         if RMC_RAW_DF is not None and not RMC_RAW_DF.empty:
@@ -1039,7 +1038,7 @@ elif st.session_state.view_state == "summary":
                 </thead>
                 <tbody>
                     <tr><td>{upfront_label}</td><td>AED {upfront_amount:,.2f}</td></tr>
-                    <tr><td>Registration Documentation Fee</td><td>AED {registration_field_amt if 'registration_field_amt' in locals() else registration_fee:,.2f}</td></tr>
+                    <tr><td>Registration Documentation Fee</td><td>AED {registration_fee:,.2f}</td></tr>
                     <tr><td>DP Processing Fee (DP PF)</td><td>AED {dp_processing_fee:,.2f}</td></tr>
                     <tr><td>Bank Processing Fee (Bank PF)</td><td>AED {bank_processing_fee:,.2f}</td></tr>
                 </tbody>
