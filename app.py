@@ -278,24 +278,21 @@ def load_master_workbook(file_path):
     if rmc_sheet:
         df_rmc = pd.read_excel(xls, sheet_name=rmc_sheet)
         df_rmc.columns = [str(c).strip() for c in df_rmc.columns]
+        # Columns E:H correspond to indices 4, 5, 6, 7 (0-based)
+        rmc_header_keys = [str(c).strip() for c in df_rmc.columns[4:8]] if len(df_rmc.columns) >= 8 else ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
+        data["rmc"]["headers"] = rmc_header_keys
+        
         for _, row in df_rmc.iterrows():
             v_code = str(row.iloc[0]).strip() if len(row) > 0 else ""
             if not v_code or v_code.lower() in ["nan", "variant codes", "option code"]:
                 continue
             
             rmc_entry = {}
-            for col in df_rmc.columns:
-                col_upper = col.upper()
-                if "RMC" in col_upper or col_upper in ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]:
-                    rmc_entry[col.strip()] = safe_float(row.get(col, 0.0))
+            for idx, h_key in enumerate(rmc_header_keys):
+                col_idx = 4 + idx
+                val = safe_float(row.iloc[col_idx]) if len(row) > col_idx else 0.0
+                rmc_entry[h_key] = val
             
-            if not rmc_entry and len(df_rmc.columns) >= 8:
-                rmc_entry = {
-                    str(df_rmc.columns[4]).strip(): safe_float(row.iloc[4]),
-                    str(df_rmc.columns[5]).strip(): safe_float(row.iloc[5]),
-                    str(df_rmc.columns[6]).strip(): safe_float(row.iloc[6]),
-                    str(df_rmc.columns[7]).strip(): safe_float(row.iloc[7]),
-                }
             data["rmc"][v_code.upper()] = rmc_entry
     return data
 
@@ -507,31 +504,45 @@ else:
             st.warning("ACESSORIES sheet not found or empty.")
 
         if RMC_RULES:
-            matched_rmc_dict = None
-            clean_opt_code = selected_option_code.strip().upper()
-            
-            for k, v in RMC_RULES.items():
-                if clean_opt_code in k.upper() or k.upper() in clean_opt_code:
-                    matched_rmc_dict = v
-                    break
-            
-            if not matched_rmc_dict and RMC_RULES:
-                matched_rmc_dict = list(RMC_RULES.values())[0]
-
-            rmc_keys = list(matched_rmc_dict.keys()) if matched_rmc_dict else ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
-            rmc_dropdown_options = ["NO"] + rmc_keys
+            rmc_header_keys = RMC_RULES.get("headers", ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"])
+            rmc_dropdown_options = ["NO"] + rmc_header_keys
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
             
-            if chosen_rmc != "NO" and matched_rmc_dict:
-                rmc_base_val = matched_rmc_dict.get(chosen_rmc, 0.0)
-                if rmc_base_val == 0.0:
-                    for r_key, r_val in matched_rmc_dict.items():
-                        if r_key.strip().upper() == chosen_rmc.strip().upper():
-                            rmc_base_val = r_val
+            # Implements EXACT Excel Rule: =IF(C16="NO",0,XLOOKUP(TRIM(B2),TRIM(RMC!$A:$A),INDEX(RMC!$E:$H,,MATCH(TRIM(B16),RMC!$E$1:$H$1,0))))
+            if chosen_rmc != "NO":
+                b2_trimmed = str(selected_variant_sap).strip().upper()
+                b16_trimmed = str(chosen_rmc).strip().upper()
+                
+                matched_row_dict = None
+                for k, v in RMC_RULES.items():
+                    if k == "headers":
+                        continue
+                    if k.strip().upper() == b2_trimmed:
+                        matched_row_dict = v
+                        break
+                
+                if not matched_row_dict:
+                    # Fallback partial check
+                    for k, v in RMC_RULES.items():
+                        if k == "headers":
+                            continue
+                        if b2_trimmed in k.strip().upper() or k.strip().upper() in b2_trimmed:
+                            matched_row_dict = v
+                            break
+                            
+                if not matched_row_dict and len(RMC_RULES) > 1:
+                    first_real_key = [k for k in RMC_RULES.keys() if k != "headers"][0]
+                    matched_row_dict = RMC_RULES[first_real_key]
+                
+                rmc_base_val = 0.0
+                if matched_row_dict:
+                    for hk, hv in matched_row_dict.items():
+                        if hk.strip().upper() == b16_trimmed:
+                            rmc_base_val = hv
                             break
                 
-                rmc_total_val = rmc_base_val * 1.05
-                rmc_selected_cost += rmc_total_val
+                # RMC is added to accessories breakdown as Base Price, but full cost includes 5% VAT multiplier
+                rmc_selected_cost += rmc_base_val * 1.05
                 checked_addons_list.append({
                     "name": f"Routine Maintenance Contract ({chosen_rmc})", 
                     "price": rmc_base_val, 
@@ -827,6 +838,12 @@ elif st.session_state.view_state == "summary":
                 .logo-img {{
                     max-height: 50px;
                 }}
+                .vehicle-img {{
+                    max-width: 250px;
+                    height: auto;
+                    display: block;
+                    margin: 10px auto;
+                }}
                 h1 {{
                     font-family: 'Quicksand', sans-serif;
                     font-weight: 700;
@@ -943,9 +960,11 @@ elif st.session_state.view_state == "summary":
                     <p>Unit Selected: {selected_name} — Option {selected_option_code} ({selected_year})</p>
                 </div>
                 <div>
-                    {f'<img src="{img_b64}" class="logo-img">' if img_b64 else '<h3>MITSUBISHI MOTORS</h3>'}
+                    {f'<img src="{logo_b64}" class="logo-img">' if logo_b64 else '<h3>MITSUBISHI MOTORS</h3>'}
                 </div>
             </div>
+
+            {f'<div style="text-align: center; margin-bottom: 15px;"><img src="{img_b64}" class="vehicle-img"></div>' if img_b64 else ''}
 
             <div class="details-section">
                 <div><strong>Financial Institution:</strong> {selected_bank}</div>
@@ -1079,7 +1098,7 @@ elif st.session_state.view_state == "summary":
                     <li>Labour Card / Free Zone / Employer ID.</li>
                     <li>Copy of the UAE Driver's License Both Sides.</li>
                     <li>Current Dated Salary Certificate from The Employer.</li>
-                    <li>Pay Slices For The Last 3 Months - [If Variance In Salary].</li>
+                    <li>Pay Slips For The Last 3 Months - [If Variance In Salary].</li>
                     <li>IBAN.</li>
                 </ul>
             </div>
@@ -1090,6 +1109,6 @@ elif st.session_state.view_state == "summary":
             label="📥 Download HTML For PDF/PRINT",
             data=html_content,
             file_name=f"Mitsubishi_Financial_Summary_{selected_option_code}.html",
-            mime="text/html",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
