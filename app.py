@@ -590,213 +590,227 @@ else:
         else:
             display_ins_price = 0.0
 is_vri_selected = st.checkbox(
-f"Vehicle Replacement Insurance (VRI) (+AED {display_vri_price:,.2f})",
-value=False,
-key="cb_vri_insurance"
-)
-is_insurance_selected = st.checkbox(
-f"Vehicle Insurance (+AED {display_ins_price:,.2f})",
-value=False,
-key="cb_car_insurance"
-)
-vehicle_insurance_cost = display_ins_price if is_insurance_selected else 0.0
-vri_calculated_cost = display_vri_price if is_vri_selected else 0.0
-if is_vri_selected:
-checked_addons_list.append({
-"name": "Vehicle Replacement Insurance (VRI)",
-"price": vri_calculated_cost,
-"vat_taxable": False
-})
-if is_insurance_selected:
-checked_addons_list.append({
-"name": "Vehicle Insurance",
-"price": vehicle_insurance_cost,
-"vat_taxable": False
-})
-# Reservation Fee Lookup from Reservation Fees Sheet
-if code_clean in RESERVATION_FEES_MASTER:
-vehicle_reservation_fee = RESERVATION_FEES_MASTER[code_clean]
-elif selected_name in ['Attrage', 'Mirage'] or any(tag in code_clean.upper() for tag in ['MIG', 'ATG', 'MOP', 'MOG']):
-vehicle_reservation_fee = 500.0
-else:
-vehicle_reservation_fee = 1000.0
-registration_fee = 600.0
-dp_processing_fee = 315.0
-base_vehicle_vat = base_vehicle_price * 0.05
-total_base_vehicle_price = base_vehicle_price + base_vehicle_vat
-excel_addons_total = (
-acc_selected_price
-+ ceramic_selected_price
-+ foppfgoldpackage_selected_price
-+ warranty_selected_price
-+ vri_calculated_cost
-+ vehicle_insurance_cost
-+ rmc_selected_cost
-)
-total_vat_charges = (
-base_vehicle_price
-+ acc_selected_price
-+ ceramic_selected_price
-+ foppfgoldpackage_selected_price
-+ warranty_selected_price
-) * 0.05
-full_vehicle_value_including_addons = (
-base_vehicle_price
-+ excel_addons_total
-+ total_vat_charges
-)
-calculated_downpayment = full_vehicle_value_including_addons * down_payment_pct
-finance_amount = full_vehicle_value_including_addons - calculated_downpayment
-bank_processing_fee = finance_amount * 0.0105
-st.write("")
-if st.button("Generate Summary", use_container_width=True):
-st.session_state.view_state = "summary"
+            f"Vehicle Replacement Insurance (VRI) (+AED {display_vri_price:,.2f})",
+            value=False,
+            key="cb_vri_insurance"
+        )
+        is_insurance_selected = st.checkbox(
+            f"Vehicle Insurance (+AED {display_ins_price:,.2f})",
+            value=False,
+            key="cb_car_insurance"
+        )
 
---------------------------------------------------
+        vehicle_insurance_cost = display_ins_price if is_insurance_selected else 0.0
+        vri_calculated_cost = display_vri_price if is_vri_selected else 0.0
 
+        if is_vri_selected:
+            checked_addons_list.append({
+                "name": "Vehicle Replacement Insurance (VRI)",
+                "price": vri_calculated_cost,
+                "vat_taxable": False
+            })
+        if is_insurance_selected:
+            checked_addons_list.append({
+                "name": "Vehicle Insurance",
+                "price": vehicle_insurance_cost,
+                "vat_taxable": False
+            })
 
-MAIN WORKSPACE RENDERING
+        # Reservation Fee Lookup from Reservation Fees Sheet
+        if code_clean in RESERVATION_FEES_MASTER:
+            vehicle_reservation_fee = RESERVATION_FEES_MASTER[code_clean]
+        elif selected_name in ['Attrage', 'Mirage'] or any(tag in code_clean.upper() for tag in ['MIG', 'ATG', 'MOP', 'MOG']):
+            vehicle_reservation_fee = 500.0
+        else:
+            vehicle_reservation_fee = 1000.0
 
+        registration_fee = 600.0
+        dp_processing_fee = 315.0
 
---------------------------------------------------
+        base_vehicle_vat = base_vehicle_price * 0.05
+        total_base_vehicle_price = base_vehicle_price + base_vehicle_vat
 
+        excel_addons_total = (
+            acc_selected_price
+            + ceramic_selected_price
+            + foppfgoldpackage_selected_price
+            + warranty_selected_price
+            + vri_calculated_cost
+            + vehicle_insurance_cost
+            + rmc_selected_cost
+        )
+        total_vat_charges = (
+            base_vehicle_price
+            + acc_selected_price
+            + ceramic_selected_price
+            + foppfgoldpackage_selected_price
+            + warranty_selected_price
+        ) * 0.05
+
+        full_vehicle_value_including_addons = (
+            base_vehicle_price
+            + excel_addons_total
+            + total_vat_charges
+        )
+
+        calculated_downpayment = full_vehicle_value_including_addons * down_payment_pct
+        finance_amount = full_vehicle_value_including_addons - calculated_downpayment
+        bank_processing_fee = finance_amount * 0.0105
+
+        st.write("")
+        if st.button("Generate Summary", use_container_width=True):
+            st.session_state.view_state = "summary"
+
+# --------------------------------------------------
+# MAIN WORKSPACE RENDERING
+# --------------------------------------------------
 if st.session_state.view_state == "input":
-st.title("Mitsubishi Financial Dashboard")
-st.info(
-"Configure variables in the sidebar panel. Then click 'Generate Summary' "
-"to view the calculation report."
-)
+    st.title("Mitsubishi Financial Dashboard")
+    st.info(
+        "Configure variables in the sidebar panel. Then click **'Generate Summary'** "
+        "to view the calculation report."
+    )
 elif st.session_state.view_state == "summary":
-st.title("📄 Mitsubishi Financial Matrix Calculator")
-st.subheader(f"Unit Selected: {selected_name} — Option {selected_option_code} ({selected_year})")
-st.markdown(
-f"""
+    st.title("📄 Mitsubishi Financial Matrix Calculator")
+    st.subheader(f"Unit Selected: {selected_name} — Option {selected_option_code} ({selected_year})")
+    
+    st.markdown(
+        f"""
+        <div style="background-color: #F4F0EA; padding: 15px 20px; border-radius: 8px; border-left: 4px solid #191919; margin-bottom: 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <span style="font-family: 'Quicksand', sans-serif; font-size: 0.85rem; font-weight: 600; color: #555555; display: block; text-transform: uppercase;">Financial Institution</span>
+                <span style="font-family: 'Amethysta', serif; font-size: 1.2rem; color: #191919;">{selected_bank}</span>
+            </div>
+            <div>
+                <span style="font-family: 'Quicksand', sans-serif; font-size: 0.85rem; font-weight: 600; color: #555555; display: block; text-transform: uppercase;">Flat Interest Rate (ROI)</span>
+                <span style="font-family: 'Amethysta', serif; font-size: 1.2rem; color: #191919;">{bank_rate*100:.4f}%</span>
+            </div>
+            <div>
+                <span style="font-family: 'Quicksand', sans-serif; font-size: 0.85rem; font-weight: 600; color: #555555; display: block; text-transform: uppercase;">Down Payment Ratio</span>
+                <span style="font-family: 'Amethysta', serif; font-size: 1.2rem; color: #191919;">{down_payment_pct_val}%</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
+    if customer_name or selected_sales_exec or fixed_fi_name:
+        st.markdown("---")
+        col_cust1, col_cust2 = st.columns(2)
+        with col_cust1:
+            if customer_name:
+                st.write(f"**Customer Name:** {customer_name}")
+            if customer_email:
+                st.write(f"**Customer Email:** {customer_email}")
+            if customer_mobile:
+                st.write(f"**Customer Mobile:** {customer_mobile}")
+        with col_cust2:
+            if selected_sales_exec:
+                st.write(f"**Sales Executive:** {selected_sales_exec}")
+            st.write(f"**Executive Email:** {exec_email}")
+            if exec_mobile:
+                st.write(f"**Executive Mobile:** {exec_mobile}")
+            st.write(f"**F&I Specialist:** {fixed_fi_name}")
+            st.write(f"**F&I Email:** {fixed_fi_email}")
 
-Financial Institution
-{selected_bank}
+    lookup_name = "Xpander Cross" if (selected_name == "Xpander" and str(selected_option_code).strip().upper() == "XC") else selected_name
+    img_b64 = None
+    if lookup_name in VEHICLE_IMAGES:
+        img_file = VEHICLE_IMAGES[lookup_name]
+        resolved_path = find_valid_image_path(img_file)
+        if resolved_path:
+            st.image(resolved_path, width=420)
+            img_b64 = get_image_base64(resolved_path)
 
+    st.markdown("---")
+    st.header("1. Base Vehicle Price & Tax Breakdown")
+    base_price_df = pd.DataFrame([{
+        "Vehicle Model / Variant": f"{selected_name} ({selected_option_code})",
+        "Base Unit Price (Excl. VAT)": f"AED {base_vehicle_price:,.2f}",
+        "VAT (5%)": f"AED {base_vehicle_vat:,.2f}",
+        "Total Unit Price (Incl. VAT)": f"AED {total_base_vehicle_price:,.2f}"
+    }])
+    st.table(base_price_df)
 
-Flat Interest Rate (ROI)
-{bank_rate*100:.4f}%
+    st.subheader("Financial Overview")
+    col_s1, col_s2, col_s3 = st.columns(3)
+    col_s1.metric("Total Vehicle Value (incl. Addons)", f"AED {full_vehicle_value_including_addons:,.2f}")
+    col_s2.metric("Gross Down Payment Req.", f"AED {calculated_downpayment:,.2f}")
+    col_s3.metric("Vehicle Finance Amount", f"AED {finance_amount:,.2f}")
 
+    st.markdown("---")
+    st.header("2. Loan Installment Breakdowns")
+    st.subheader("🟢 Primary Asset Vehicle Financing")
+    tenures = list(range(1, 6))
+    vehicle_emi_results = []
+    for years in tenures:
+        months = years * 12
+        total_interest = finance_amount * bank_rate * years
+        monthly_emi = (finance_amount + total_interest) / months
+        vehicle_emi_results.append({
+            "Asset Term (Years)": f"{years} Years ({months} Mos)",
+            "Flat ROI %": f"{bank_rate*100:.4f}%",
+            "Principal Loan Block": f"AED {finance_amount:,.2f}",
+            "Total Interest Accrued": f"AED {total_interest:,.2f}",
+            "Monthly Vehicle EMI": f"AED {monthly_emi:,.2f}"
+        })
+    st.table(pd.DataFrame(vehicle_emi_results))
 
-Down Payment Ratio
-{down_payment_pct_val}%
+    dp_results = []
+    if finance_dp_option:
+        st.write("")
+        st.subheader("🔵 Down Payment Loan Financing Options")
+        dp_financed_base = max(0.0, calculated_downpayment - vehicle_reservation_fee)
+        dp_options = [
+            {"months": 3, "rate": 0.0000, "label": "3 Months (0.00% ROI)"},
+            {"months": 12, "rate": 0.0525, "label": "12 Months (5.25% ROI)"},
+            {"months": 24, "rate": 0.0630, "label": "24 Months (6.30% ROI)"}
+        ]
+        for opt in dp_options:
+            total_interest = dp_financed_base * opt["rate"] * (opt["months"] / 12.0)
+            monthly_emi = (dp_financed_base + total_interest) / opt["months"]
+            dp_results.append({
+                "Term": opt["label"],
+                "Financed Balance": f"AED {dp_financed_base:,.2f}",
+                "Total Interest": f"AED {total_interest:,.2f}",
+                "Monthly EMI": f"AED {monthly_emi:,.2f}"
+            })
+        st.table(pd.DataFrame(dp_results))
 
+    st.markdown("---")
+    st.header("3. Accessories Breakdown")
+    addons_table_data = []
+    if checked_addons_list:
+        total_display_addons_price = 0.0
+        for addon in checked_addons_list:
+            item_price = addon["price"]
+            item_vat = (item_price * 0.05) if addon["vat_taxable"] else 0.0
+            total_display_addons_price += (item_price + item_vat)
+            addons_table_data.append({
+                "Selected Accessories / Services": addon["name"],
+                "Individual Price (Base)": f"AED {item_price:,.2f}",
+                "VAT Amount (5%)": f"AED {item_vat:,.2f}" if addon["vat_taxable"] else "AED 0.00 (VAT Pre-incl.)",
+                "Total Cost (incl. VAT)": f"AED {(item_price + item_vat):,.2f}"
+            })
+        st.table(pd.DataFrame(addons_table_data))
+    else:
+        st.write("*No optional accessories selected.*")
 
-""",
-unsafe_allow_html=True
-)
-if customer_name or selected_sales_exec or fixed_fi_name:
-st.markdown("---")
-col_cust1, col_cust2 = st.columns(2)
-with col_cust1:
-if customer_name:
-st.write(f"Customer Name: {customer_name}")
-if customer_email:
-st.write(f"Customer Email: {customer_email}")
-if customer_mobile:
-st.write(f"Customer Mobile: {customer_mobile}")
-with col_cust2:
-if selected_sales_exec:
-st.write(f"Sales Executive: {selected_sales_exec}")
-st.write(f"Executive Email: {exec_email}")
-if exec_mobile:
-st.write(f"Executive Mobile: {exec_mobile}")
-st.write(f"F&I Specialist: {fixed_fi_name}")
-st.write(f"F&I Email: {fixed_fi_email}")
-lookup_name = "Xpander Cross" if (selected_name == "Xpander" and str(selected_option_code).strip().upper() == "XC") else selected_name
-img_b64 = None
-if lookup_name in VEHICLE_IMAGES:
-img_file = VEHICLE_IMAGES[lookup_name]
-resolved_path = find_valid_image_path(img_file)
-if resolved_path:
-st.image(resolved_path, width=420)
-img_b64 = get_image_base64(resolved_path)
-st.markdown("---")
-st.header("1. Base Vehicle Price & Tax Breakdown")
-base_price_df = pd.DataFrame([{
-"Vehicle Model / Variant": f"{selected_name} ({selected_option_code})",
-"Base Unit Price (Excl. VAT)": f"AED {base_vehicle_price:,.2f}",
-"VAT (5%)": f"AED {base_vehicle_vat:,.2f}",
-"Total Unit Price (Incl. VAT)": f"AED {total_base_vehicle_price:,.2f}"
-}])
-st.table(base_price_df)
-st.subheader("Financial Overview")
-col_s1, col_s2, col_s3 = st.columns(3)
-col_s1.metric("Total Vehicle Value (incl. Addons)", f"AED {full_vehicle_value_including_addons:,.2f}")
-col_s2.metric("Gross Down Payment Req.", f"AED {calculated_downpayment:,.2f}")
-col_s3.metric("Vehicle Finance Amount", f"AED {finance_amount:,.2f}")
-st.markdown("---")
-st.header("2. Loan Installment Breakdowns")
-st.subheader("🟢 Primary Asset Vehicle Financing")
-tenures = list(range(1, 6))
-vehicle_emi_results = []
-for years in tenures:
-months = years * 12
-total_interest = finance_amount * bank_rate * years
-monthly_emi = (finance_amount + total_interest) / months
-vehicle_emi_results.append({
-"Asset Term (Years)": f"{years} Years ({months} Mos)",
-"Flat ROI %": f"{bank_rate*100:.4f}%",
-"Principal Loan Block": f"AED {finance_amount:,.2f}",
-"Total Interest Accrued": f"AED {total_interest:,.2f}",
-"Monthly Vehicle EMI": f"AED {monthly_emi:,.2f}"
-})
-st.table(pd.DataFrame(vehicle_emi_results))
-dp_results = []
-if finance_dp_option:
-st.write("")
-st.subheader("🔵 Down Payment Loan Financing Options")
-dp_financed_base = max(0.0, calculated_downpayment - vehicle_reservation_fee)
-dp_options = [
-{"months": 3, "rate": 0.0000, "label": "3 Months (0.00% ROI)"},
-{"months": 12, "rate": 0.0525, "label": "12 Months (5.25% ROI)"},
-{"months": 24, "rate": 0.0630, "label": "24 Months (6.30% ROI)"}
-]
-for opt in dp_options:
-total_interest = dp_financed_base * opt["rate"] * (opt["months"] / 12.0)
-monthly_emi = (dp_financed_base + total_interest) / opt["months"]
-dp_results.append({
-"Term": opt["label"],
-"Financed Balance": f"AED {dp_financed_base:,.2f}",
-"Total Interest": f"AED {total_interest:,.2f}",
-"Monthly EMI": f"AED {monthly_emi:,.2f}"
-})
-st.table(pd.DataFrame(dp_results))
-st.markdown("---")
-st.header("3. Accessories Breakdown")
-addons_table_data = []
-if checked_addons_list:
-total_display_addons_price = 0.0
-for addon in checked_addons_list:
-item_price = addon["price"]
-item_vat = (item_price * 0.05) if addon["vat_taxable"] else 0.0
-total_display_addons_price += (item_price + item_vat)
-addons_table_data.append({
-"Selected Accessories / Services": addon["name"],
-"Individual Price (Base)": f"AED {item_price:,.2f}",
-"VAT Amount (5%)": f"AED {item_vat:,.2f}" if addon["vat_taxable"] else "AED 0.00 (VAT Pre-incl.)",
-"Total Cost (incl. VAT)": f"AED {(item_price + item_vat):,.2f}"
-})
-st.table(pd.DataFrame(addons_table_data))
-else:
-st.write("No optional accessories selected.")
-st.markdown("---")
-st.header("4. Out-of-Pocket Cash Outlay Summary")
-if finance_dp_option:
-grand_total_cash_outlay = vehicle_reservation_fee + registration_fee + dp_processing_fee + bank_processing_fee
-else:
-grand_total_cash_outlay = calculated_downpayment + registration_fee + dp_processing_fee + bank_processing_fee
-col_out1, col_out2 = st.columns(2)
-with col_out1:
-if finance_dp_option:
-st.write(
-f"Showroom Reservation Fee: AED {vehicle_reservation_fee:,.2f} (Paid Upfront)"
-)
-st.write(
-f"Remaining Down Payment Balance: "
+    st.markdown("---")
+    st.header("4. Out-of-Pocket Cash Outlay Summary")
+    if finance_dp_option:
+        grand_total_cash_outlay = vehicle_reservation_fee + registration_fee + dp_processing_fee + bank_processing_fee
+    else:
+        grand_total_cash_outlay = calculated_downpayment + registration_fee + dp_processing_fee + bank_processing_fee
+
+    col_out1, col_out2 = st.columns(2)
+    with col_out1:
+        if finance_dp_option:
+            st.write(
+                f"**Showroom Reservation Fee:** AED {vehicle_reservation_fee:,.2f} (Paid Upfront)"
+            )
+            st.write(
+                f"**Remaining Down Payment Balance:** "
 f"AED {max(0.0, calculated_downpayment - vehicle_reservation_fee):,.2f} "
 f"(Financed via Loan Plan)"
 )
@@ -1080,12 +1094,8 @@ F&I Specialist: {fixed_fi_name}
 
 {f'' if img_b64 else ''}
 1. Base Vehicle Price & Tax Breakdown
-
-Vehicle Model / Variant
-	Base Unit Price (Excl. VAT)	VAT (5%)	Total Unit Price (Incl. VAT)
-{selected_name} ({selected_option_code})
-	AED {base_vehicle_price:,.2f}	AED {base_vehicle_vat:,.2f}	AED {total_base_vehicle_price:,.2f}
-
+Vehicle Model / Variant	Base Unit Price (Excl. VAT)	VAT (5%)	Total Unit Price (Incl. VAT)
+{selected_name} ({selected_option_code})	AED {base_vehicle_price:,.2f}	AED {base_vehicle_vat:,.2f}	AED {total_base_vehicle_price:,.2f}
 Total Vehicle Value (incl. Addons)
 AED {full_vehicle_value_including_addons:,.2f}
 
@@ -1102,30 +1112,17 @@ AED {finance_amount:,.2f}
 2. Loan Installment Breakdowns
 Primary Asset Vehicle Financing
 {"".join([f"{row['Asset Term (Years)']}{row['Flat ROI %']}AED {finance_amount:,.2f}AED {finance_amount * bank_rate * (int(row['Asset Term (Years)'].split().getitem(0))):,.2f}AED {((finance_amount + (finance_amount * bank_rate * (int(row['Asset Term (Years)'].split().getitem(0))))) / (int(row['Asset Term (Years)'].split().getitem(0)) * 12)):,.2f}" for row in vehicle_emi_results])}
-
-Asset Term (Years)
-	Flat ROI %	Principal Loan Block	Total Interest Accrued	Monthly Vehicle EMI
-
+Asset Term (Years)	Flat ROI %	Principal Loan Block	Total Interest Accrued	Monthly Vehicle EMI
 {"Down Payment Loan Financing OptionsTermFinanced BalanceTotal InterestMonthly EMI" + "".join([f"{row['Term']}AED {dp_financed_base:,.2f}AED {float(row['Total Interest'].replace('AED ','').replace(',','')):,.2f}AED {float(row['Monthly EMI'].replace('AED ','').replace(',','')):,.2f}" for row in dp_results]) + "" if dp_results else ""}
 3. Accessories Breakdown
 {"".join([f"{item['Selected Accessories / Services']}AED {float(item['Individual Price (Base)'].replace('AED ','').replace(',','')):,.2f}" + (f"AED {float(item['VAT Amount (5%)'].replace('AED ','').replace(',','')):,.2f}" if "VAT Pre-incl" not in item['VAT Amount (5%)'] else "AED 0.00 (VAT Pre-incl.)") + f"AED {float(item['Total Cost (incl. VAT)'].replace('AED ','').replace(',','')):,.2f}" for item in addons_table_data]) if addons_table_data else "No optional accessories selected."}
-
-Selected Accessories / Services
-	Individual Price (Base)	VAT Amount (5%)	Total Cost (incl. VAT)
-
+Selected Accessories / Services	Individual Price (Base)	VAT Amount (5%)	Total Cost (incl. VAT)
 4. Out-of-Pocket Cash Outlay Summary
-
-Fee Description
-	Amount
-{upfront_label}
-	AED {upfront_amount:,.2f}
-Registration Documentation Fee
-	AED {registration_fee:,.2f}
-DP Processing Fee (DP PF)
-	AED {dp_processing_fee:,.2f}
-Bank Processing Fee (Bank PF)
-	AED {bank_processing_fee:,.2f}
-
+Fee Description	Amount
+{upfront_label}	AED {upfront_amount:,.2f}
+Registration Documentation Fee	AED {registration_fee:,.2f}
+DP Processing Fee (DP PF)	AED {dp_processing_fee:,.2f}
+Bank Processing Fee (Bank PF)	AED {bank_processing_fee:,.2f}
 Actual Upfront Cash Required at Showroom Handover
 AED {grand_total_cash_outlay:,.2f}
 
