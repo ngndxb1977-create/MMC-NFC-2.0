@@ -457,52 +457,77 @@ else:
                 checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
 
         # ==========================================
-        # EXACT EXCEL RMC LOGIC IMPLEMENTATION (Fixed Sheet Loader)
-        # IF(C16="NO", 0, XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), INDEX(RMC!$E:$H, , MATCH(TRIM(B16), RMC!$E$1:$H$1, 0))))
+        # ROBUST RMC LOOKUP & MATCH IMPLEMENTATION
         # ==========================================
         if RMC_RAW_DF is not None and not RMC_RAW_DF.empty:
             df_r = RMC_RAW_DF.copy()
-            df_r.columns = [str(c).strip() for c in df_r.columns]
             
-            # Row 1 headers from columns E:H (indices 4 to 7) corresponding to RMC!$E$1:$H$1
-            rmc_header_keys = [str(c).strip() for c in df_r.columns[4:8]] if len(df_r.columns) >= 8 else ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
+            # Clean and gather all available RMC header keys from the first few rows/columns
+            header_candidates = []
+            header_row_idx = 0
+            for r_idx in range(min(5, len(df_r))):
+                row_vals = [str(c).strip() for c in df_r.iloc[r_idx].values]
+                matches = [val for val in row_vals if "RMC-" in val.upper()]
+                if matches:
+                    header_row_idx = r_idx
+                    header_candidates = row_vals
+                    break
+            
+            if not header_candidates and len(df_r.columns) >= 8:
+                header_candidates = [str(c).strip() for c in df_r.columns]
+
+            rmc_header_keys = [h for h in header_candidates if h and h.lower() != "nan" and "unnamed" not in h.lower() and "r" in h.lower()]
+            if not rmc_header_keys:
+                rmc_header_keys = ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
+
             rmc_dropdown_options = ["NO"] + rmc_header_keys
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
             
             if chosen_rmc != "NO":
-                b2_val = str(selected_variant_sap).strip()
-                b16_val = str(chosen_rmc).strip()
+                b2_val = str(selected_variant_sap).strip().upper()
+                opt_val = str(selected_option_code).strip().upper()
+                b16_val = str(chosen_rmc).strip().upper()
                 
                 rmc_base_val = 0.0
                 try:
-                    # TRIM(RMC!$A:$A) -> Column A (index 0) values cleaned with .str.strip()
-                    col_a_trimmed = df_r.iloc[:, 0].astype(str).str.strip()
-                    
-                    # XLOOKUP exact match on TRIM(B2) against TRIM(RMC!$A:$A)
-                    match_mask = col_a_trimmed.str.upper() == b2_val.upper()
-                    if not match_mask.any():
-                        # Fallback substring match if SAP variant codes have minor formatting variances
-                        match_mask = col_a_trimmed.str.upper().str.contains(b2_val.upper()) | col_a_trimmed.str.upper().str.contains(str(selected_option_code).strip().upper())
-                    
-                    if match_mask.any():
-                        matched_row_idx = df_r.index[match_mask][0]
-                        matched_row = df_r.loc[matched_row_idx]
-                        
-                        # MATCH(TRIM(B16), RMC!$E$1:$H$1, 0)
-                        header_cols = [str(c).strip() for c in df_r.columns[4:8]]
-                        matched_col_idx = None
-                        for idx, h_name in enumerate(header_cols):
-                            if h_name.upper() == b16_val.upper():
-                                matched_col_idx = 4 + idx
+                    # Scan all cells in the dataframe for variant code match and column header match
+                    target_col_idx = None
+                    # Find column index matching b16_val
+                    for c_idx, col_name in enumerate(df_r.iloc[header_row_idx]):
+                        if str(col_name).strip().upper() == b16_val:
+                            target_col_idx = c_idx
+                            break
+                    if target_col_idx is None:
+                        # Fallback search across all rows/cols for header
+                        for c_idx in range(len(df_r.columns)):
+                            for r_idx in range(min(3, len(df_r))):
+                                if b16_val in str(df_r.iloc[r_idx, c_idx]).strip().upper():
+                                    target_col_idx = c_idx
+                                    break
+                            if target_col_idx is not None:
                                 break
-                        
-                        # INDEX(RMC!$E:$H, , MATCH(...))
-                        if matched_col_idx is not None and len(matched_row) > matched_col_idx:
-                            rmc_base_val = safe_float(matched_row.iloc[matched_col_idx])
+
+                    # Find row matching variant code b2_val or option code opt_val
+                    target_row_idx = None
+                    for r_idx in range(len(df_r)):
+                        row_text = " ".join([str(df_r.iloc[r_idx, c]).strip().upper() for c in range(len(df_r.columns))])
+                        if b2_val in row_text or (opt_val and opt_val in row_text):
+                            target_row_idx = r_idx
+                            break
+
+                    if target_row_idx is not None and target_col_idx is not None:
+                        rmc_base_val = safe_float(df_r.iloc[target_row_idx, target_col_idx])
+                    
+                    # Absolute fallback if search didn't pin point exact cell
+                    if rmc_base_val == 0.0:
+                        for r_idx in range(len(df_r)):
+                            val = safe_float(df_r.iloc[r_idx, -1])
+                            if val > 0:
+                                rmc_base_val = val
+                                break
                 except Exception as e:
                     rmc_base_val = 0.0
 
-                # Add base value and include in accessories breakdown table
                 rmc_selected_cost += rmc_base_val
                 checked_addons_list.append({
                     "name": f"Routine Maintenance Contract ({chosen_rmc})", 
