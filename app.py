@@ -311,6 +311,7 @@ def load_master_workbook(file_path):
                 "RMC-10-100": safe_float(row.get("RMC-10-100", 0.0)),
             }
 return data
+
 @st.cache_data
 def load_sales_specialists_master(file_path):
 specialists_dict = {}
