@@ -256,56 +256,60 @@ def load_master_workbook(file_path):
                 pct_val = pct_val / 100.0
             data["discounts"][disc_name] = pct_val
 # 5. RESERVATION FEES (A: OPTION CODE ... K: Reservation Fees)
-res_sheet = find_sheet_name(xls, ["Reservation Fees", "RESERVATION FEES"])
-if res_sheet:
-df_res = pd.read_excel(xls, sheet_name=res_sheet)
-df_res.columns = [str(c).strip() for c in df_res.columns]
-for _, row in df_res.iterrows():
-opt_code = str(row.get("OPTION CODE", row.iloc.getitem(0) if len(row) > 0 else "")).strip()
-if not opt_code or opt_code.lower() in ["nan", "option code"]:
-continue
-if "Reservation Fees" in df_res.columns:
-res_fee = safe_float(row.get("Reservation Fees"), default=1000.0)
-else:
-res_fee = safe_float(row.iloc.getitem(10), default=1000.0) if len(row) > 10 else 1000.0
-data["reservation_fees"][opt_code] = res_fee
-# 6. INSURANCE (A: OPTION CODE ... K: Percentage Rate, L: Fixed Amount, M: Vat Multiplier, N: Minimum Premium)
-ins_sheet = find_sheet_name(xls, ["Insurance", "INSURANCE"])
-if ins_sheet:
-df_ins = pd.read_excel(xls, sheet_name=ins_sheet)
-df_ins.columns = [str(c).strip() for c in df_ins.columns]
-for _, row in df_ins.iterrows():
-opt_code = str(row.get("OPTION CODE", row.iloc.getitem(0) if len(row) > 0 else "")).strip()
-if not opt_code or opt_code.lower() in ["nan", "option code"]:
-continue
-pct_rate = safe_float(row.get("Percentage Rate", row.iloc.getitem(10) if len(row) > 10 else 0.0))
-if pct_rate > 1.0:
-pct_rate = pct_rate / 100.0
-fixed_amt = safe_float(row.get("Fixed Amount", row.iloc.getitem(11) if len(row) > 11 else 0.0))
-vat_mult = safe_float(row.get("Vat Multiplier", row.iloc.getitem(12) if len(row) > 12 else 1.05), default=1.05)
-if vat_mult == 0.0:
-vat_mult = 1.05
-min_prem = safe_float(row.get("Minimum Premium", row.iloc.getitem(13) if len(row) > 13 else 0.0))
-data["insurance"][opt_code] = {
-"pct_rate": pct_rate,
-"fixed_amount": fixed_amt,
-"vat_multiplier": vat_mult,
-"min_premium": min_prem
-}
-# 7. RMC (Optional sheet if present in workbook)
-rmc_sheet = find_sheet_name(xls, ["RMC"])
-if rmc_sheet:
-df_rmc = pd.read_excel(xls, sheet_name=rmc_sheet)
-for _, row in df_rmc.iterrows():
-v_code = str(row.iloc.getitem(0)).strip() if len(row) > 0 else ""
-if not v_code or v_code.lower() in ["nan", "variant codes", "option code"]:
-continue
-data["rmc"][v_code] = {
-"RMC-10-40": safe_float(row.get("RMC-10-40", 0.0)),
-"RMC-10-60": safe_float(row.get("RMC-10-60", 0.0)),
-"RMC-10-70": safe_float(row.get("RMC-10-70", 0.0)),
-"RMC-10-100": safe_float(row.get("RMC-10-100", 0.0)),
-}
+    res_sheet = find_sheet_name(xls, ["Reservation Fees", "RESERVATION FEES"])
+    if res_sheet:
+        df_res = pd.read_excel(xls, sheet_name=res_sheet)
+        df_res.columns = [str(c).strip() for c in df_res.columns]
+        for _, row in df_res.iterrows():
+            opt_code = str(row.get("OPTION CODE", row.iloc.__getitem__(0) if len(row) > 0 else "")).strip()
+            if not opt_code or opt_code.lower() in ["nan", "option code"]:
+                continue
+            if "Reservation Fees" in df_res.columns:
+                res_fee = safe_float(row.get("Reservation Fees"), default=1000.0)
+            else:
+                res_fee = safe_float(row.iloc.__getitem__(10), default=1000.0) if len(row) > 10 else 1000.0
+            data["reservation_fees"][opt_code] = res_fee
+
+    # 6. INSURANCE (A: OPTION CODE ... K: Percentage Rate, L: Fixed Amount, M: Vat Multiplier, N: Minimum Premium)
+    ins_sheet = find_sheet_name(xls, ["Insurance", "INSURANCE"])
+    if ins_sheet:
+        df_ins = pd.read_excel(xls, sheet_name=ins_sheet)
+        df_ins.columns = [str(c).strip() for c in df_ins.columns]
+        for _, row in df_ins.iterrows():
+            opt_code = str(row.get("OPTION CODE", row.iloc.__getitem__(0) if len(row) > 0 else "")).strip()
+            if not opt_code or opt_code.lower() in ["nan", "option code"]:
+                continue
+
+            pct_rate = safe_float(row.get("Percentage Rate", row.iloc.__getitem__(10) if len(row) > 10 else 0.0))
+            if pct_rate > 1.0:
+                pct_rate = pct_rate / 100.0
+            fixed_amt = safe_float(row.get("Fixed Amount", row.iloc.__getitem__(11) if len(row) > 11 else 0.0))
+            vat_mult = safe_float(row.get("Vat Multiplier", row.iloc.__getitem__(12) if len(row) > 12 else 1.05), default=1.05)
+            if vat_mult == 0.0:
+                vat_mult = 1.05
+            min_prem = safe_float(row.get("Minimum Premium", row.iloc.__getitem__(13) if len(row) > 13 else 0.0))
+
+            data["insurance"][opt_code] = {
+                "pct_rate": pct_rate,
+                "fixed_amount": fixed_amt,
+                "vat_multiplier": vat_mult,
+                "min_premium": min_prem
+            }
+
+    # 7. RMC (Optional sheet if present in workbook)
+    rmc_sheet = find_sheet_name(xls, ["RMC"])
+    if rmc_sheet:
+        df_rmc = pd.read_excel(xls, sheet_name=rmc_sheet)
+        for _, row in df_rmc.iterrows():
+            v_code = str(row.iloc.__getitem__(0)).strip() if len(row) > 0 else ""
+            if not v_code or v_code.lower() in ["nan", "variant codes", "option code"]:
+                continue
+            data["rmc"][v_code] = {
+                "RMC-10-40": safe_float(row.get("RMC-10-40", 0.0)),
+                "RMC-10-60": safe_float(row.get("RMC-10-60", 0.0)),
+                "RMC-10-70": safe_float(row.get("RMC-10-70", 0.0)),
+                "RMC-10-100": safe_float(row.get("RMC-10-100", 0.0)),
+            }
 return data
 @st.cache_data
 def load_sales_specialists_master(file_path):
