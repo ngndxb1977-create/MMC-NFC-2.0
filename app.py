@@ -311,57 +311,60 @@ def load_master_workbook(file_path):
                 "RMC-10-100": safe_float(row.get("RMC-10-100", 0.0)),
             }
 return data
-
 @st.cache_data
 def load_sales_specialists_master(file_path):
-specialists_dict = {}
-if os.path.exists(file_path):
-try:
-df = pd.read_excel(file_path)
-for _, row in df.iterrows():
-name = str(row.iloc.getitem(0)).strip() if len(row) > 0 else ""
-if name and name.lower() not in ["nan", "full name"]:
-specialists_dict[name] = {
-"email": str(row.iloc.getitem(1)).strip() if len(row) > 1 and pd.notna(row.iloc.getitem(1)) else "",
-"mobile": str(row.iloc.getitem(2)).strip() if len(row) > 2 and pd.notna(row.iloc.getitem(2)) else ""
-}
-except Exception as e:
-st.error(f"Error loading Sales_Specialists file: {e}")
-return specialists_dict
---------------------------------------------------
-FILE CONSTANTS
---------------------------------------------------
+    specialists_dict = {}
+    if os.path.exists(file_path):
+        try:
+            df = pd.read_excel(file_path)
+            for _, row in df.iterrows():
+                name = str(row.iloc.__getitem__(0)).strip() if len(row) > 0 else ""
+                if name and name.lower() not in ["nan", "full name"]:
+                    specialists_dict[name] = {
+                        "email": str(row.iloc.__getitem__(1)).strip() if len(row) > 1 and pd.notna(row.iloc.__getitem__(1)) else "",
+                        "mobile": str(row.iloc.__getitem__(2)).strip() if len(row) > 2 and pd.notna(row.iloc.__getitem__(2)) else ""
+                    }
+        except Exception as e:
+            st.error(f"Error loading Sales_Specialists file: {e}")
+    return specialists_dict
+
+# --------------------------------------------------
+# FILE CONSTANTS
+# --------------------------------------------------
 FILE_MASTER = "NFC New VRI Project-6.xlsx"
 FILE_SALES_SPECIALISTS = "Sales_Specialists.xlsx"
---------------------------------------------------
-VEHICLE IMAGES MAP
---------------------------------------------------
+
+# --------------------------------------------------
+# VEHICLE IMAGES MAP
+# --------------------------------------------------
 VEHICLE_IMAGES = {
-"Attrage": "attrage.png.png",
-"Mirage": "mirage.png.png",
-"ASX": "asx.png.png",
-"Eclipse Cross": "eclipse_cross.png.png",
-"Xpander": "xpander.png.png",
-"Xpander Cross": "xpander_cross.png.png",
-"Outlander": "outlander.png.png",
-"Montero Sport": "montero.png.png",
-"Destinator": "destinator.png.png"
+    "Attrage": "attrage.png.png",
+    "Mirage": "mirage.png.png",
+    "ASX": "asx.png.png",
+    "Eclipse Cross": "eclipse_cross.png.png",
+    "Xpander": "xpander.png.png",
+    "Xpander Cross": "xpander_cross.png.png",
+    "Outlander": "outlander.png.png",
+    "Montero Sport": "montero.png.png",
+    "Destinator": "destinator.png.png"
 }
+
 def find_valid_image_path(filename):
-possible_paths = [
-os.path.join("images", filename),
-os.path.join("Images", filename),
-os.path.join("images", filename.replace(".png.png", ".PNG.PNG")),
-os.path.join("Images", filename.replace(".png.png", ".PNG.PNG")),
-filename
-]
-for path in possible_paths:
-if os.path.exists(path):
-return path
-return None
---------------------------------------------------
-LOAD DATASETS
---------------------------------------------------
+    possible_paths = [
+        os.path.join("images", filename),
+        os.path.join("Images", filename),
+        os.path.join("images", filename.replace(".png.png", ".PNG.PNG")),
+        os.path.join("Images", filename.replace(".png.png", ".PNG.PNG")),
+        filename
+    ]
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    return None
+
+# --------------------------------------------------
+# LOAD DATASETS
+# --------------------------------------------------
 MASTER_DATA = load_master_workbook(FILE_MASTER)
 PRICE_LIST = MASTER_DATA["price_list"]
 BANK_RULES = MASTER_DATA["bank_rates"]
@@ -371,11 +374,13 @@ RESERVATION_FEES_MASTER = MASTER_DATA["reservation_fees"]
 INSURANCE_MASTER = MASTER_DATA["insurance"]
 RMC_RULES = MASTER_DATA["rmc"]
 SALES_SPECIALISTS_MASTER = load_sales_specialists_master(FILE_SALES_SPECIALISTS)
---------------------------------------------------
-SESSION STATE
---------------------------------------------------
+
+# --------------------------------------------------
+# SESSION STATE
+# --------------------------------------------------
 if "view_state" not in st.session_state:
-st.session_state.view_state = "input"
+    st.session_state.view_state = "input"
+
 # --------------------------------------------------
 # SIDEBAR: CUSTOMER, SALES, CONFIG
 # --------------------------------------------------
@@ -523,66 +528,61 @@ else:
         st.subheader("➕ Custom Accessories Selection")
         acc_selected_price = 0.0
         ceramic_selected_price = 0.0
-        foppfgoldpackage_selected_price = 0.0
-        warranty_selected_price = 0.0
-        rmc_selected_cost = 0.0
-        checked_addons_list = []
-
-        if ACCESSORIES_MASTER:
-            acc_options_list = list(ACCESSORIES_MASTER.keys())
-            selected_accessories = st.multiselect("Select Accessories:", acc_options_list)
-            for acc_name in selected_accessories:
-                price_val = ACCESSORIES_MASTER[acc_name]
-                display_name = acc_name
-                if "FOPPF" in acc_name.upper() or "GOLD PACKAGE" in acc_name.upper():
-                    display_name = "FO PPF GOLD PACKAGE"
-                    foppfgoldpackage_selected_price += price_val
-                elif "CERAMIC" in acc_name.upper() and "WINDOW" in acc_name.upper():
-                    ceramic_selected_price += price_val
-                elif "WARRANTY" in acc_name.upper():
-                    warranty_selected_price += price_val
-                elif "RMC" in acc_name.upper():
-                    rmc_selected_cost += price_val
-                else:
-                    acc_selected_price += price_val
-                checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
-        else:
-            st.warning("ACESSORIES sheet not found or empty.")
-
-        # RMC Dropdown if RMC sheet exists
-        if RMC_RULES:
-            if selected_option_code in RMC_RULES:
-                rmc_keys = list(RMC_RULES[selected_option_code].keys())
-            else:
-                rmc_keys = ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
-            rmc_dropdown_options = ["None"] + rmc_keys
-            chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
-            if chosen_rmc != "None" and selected_option_code in RMC_RULES:
-                rmc_from_sheet = RMC_RULES[selected_option_code].get(chosen_rmc, 0.0)
-                rmc_selected_cost += rmc_from_sheet
-                checked_addons_list.append({
-                    "name": f"Routine Maintenance Contract ({chosen_rmc})",
-                    "price": rmc_from_sheet / 1.05,
-                    "vat_taxable": True
-                })
-
-        # Valuation Base (Incl. VAT) for VRI and Insurance
-        u19_valuation_base = (
-            base_vehicle_price
-            + acc_selected_price
-            + ceramic_selected_price
-            + foppfgoldpackage_selected_price
-            + warranty_selected_price
-            + (rmc_selected_cost / 1.05)
-        ) * 1.05
-
-        # Dynamic Insurance Calculation from Insurance Sheet
-        code_clean = selected_option_code.strip()
-        name_clean = str(selected_name)
-        display_vri_price = u19_valuation_base * 3.15 * 1.05 / 100.0
-
-        if code_clean in INSURANCE_MASTER:
 Use code with caution.
+foppfgoldpackage_selected_price = 0.0
+warranty_selected_price = 0.0
+rmc_selected_cost = 0.0
+checked_addons_list = []
+if ACCESSORIES_MASTER:
+acc_options_list = list(ACCESSORIES_MASTER.keys())
+selected_accessories = st.multiselect("Select Accessories:", acc_options_list)
+for acc_name in selected_accessories:
+price_val = ACCESSORIES_MASTER[acc_name]
+display_name = acc_name
+if "FOPPF" in acc_name.upper() or "GOLD PACKAGE" in acc_name.upper():
+display_name = "FO PPF GOLD PACKAGE"
+foppfgoldpackage_selected_price += price_val
+elif "CERAMIC" in acc_name.upper() and "WINDOW" in acc_name.upper():
+ceramic_selected_price += price_val
+elif "WARRANTY" in acc_name.upper():
+warranty_selected_price += price_val
+elif "RMC" in acc_name.upper():
+rmc_selected_cost += price_val
+else:
+acc_selected_price += price_val
+checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
+else:
+st.warning("ACESSORIES sheet not found or empty.")
+# RMC Dropdown if RMC sheet exists
+if RMC_RULES:
+if selected_option_code in RMC_RULES:
+rmc_keys = list(RMC_RULES[selected_option_code].keys())
+else:
+rmc_keys = ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
+rmc_dropdown_options = ["None"] + rmc_keys
+chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
+if chosen_rmc != "None" and selected_option_code in RMC_RULES:
+rmc_from_sheet = RMC_RULES[selected_option_code].get(chosen_rmc, 0.0)
+rmc_selected_cost += rmc_from_sheet
+checked_addons_list.append({
+"name": f"Routine Maintenance Contract ({chosen_rmc})",
+"price": rmc_from_sheet / 1.05,
+"vat_taxable": True
+})
+# Valuation Base (Incl. VAT) for VRI and Insurance
+u19_valuation_base = (
+base_vehicle_price
++ acc_selected_price
++ ceramic_selected_price
++ foppfgoldpackage_selected_price
++ warranty_selected_price
++ (rmc_selected_cost / 1.05)
+) * 1.05
+# Dynamic Insurance Calculation from Insurance Sheet
+code_clean = selected_option_code.strip()
+name_clean = str(selected_name)
+display_vri_price = u19_valuation_base * 3.15 * 1.05 / 100.0
+if code_clean in INSURANCE_MASTER:
 ins_rule = INSURANCE_MASTER[code_clean]
 calc_ins = (u19_valuation_base * ins_rule["pct_rate"] + ins_rule["fixed_amount"]) * ins_rule["vat_multiplier"]
 display_ins_price = max(calc_ins, ins_rule["min_premium"])
@@ -663,9 +663,15 @@ bank_processing_fee = finance_amount * 0.0105
 st.write("")
 if st.button("Generate Summary", use_container_width=True):
 st.session_state.view_state = "summary"
+
 --------------------------------------------------
+
+
 MAIN WORKSPACE RENDERING
+
+
 --------------------------------------------------
+
 if st.session_state.view_state == "input":
 st.title("Mitsubishi Financial Dashboard")
 st.info(
@@ -1086,8 +1092,12 @@ F&I Specialist: {fixed_fi_name}
 
 {f'' if img_b64 else ''}
 1. Base Vehicle Price & Tax Breakdown
-Vehicle Model / Variant	Base Unit Price (Excl. VAT)	VAT (5%)	Total Unit Price (Incl. VAT)
-{selected_name} ({selected_option_code})	AED {base_vehicle_price:,.2f}	AED {base_vehicle_vat:,.2f}	AED {total_base_vehicle_price:,.2f}
+
+Vehicle Model / Variant
+	Base Unit Price (Excl. VAT)	VAT (5%)	Total Unit Price (Incl. VAT)
+{selected_name} ({selected_option_code})
+	AED {base_vehicle_price:,.2f}	AED {base_vehicle_vat:,.2f}	AED {total_base_vehicle_price:,.2f}
+
 Total Vehicle Value (incl. Addons)
 AED {full_vehicle_value_including_addons:,.2f}
 
@@ -1104,17 +1114,30 @@ AED {finance_amount:,.2f}
 2. Loan Installment Breakdowns
 Primary Asset Vehicle Financing
 {"".join([f"{row['Asset Term (Years)']}{row['Flat ROI %']}AED {finance_amount:,.2f}AED {finance_amount * bank_rate * (int(row['Asset Term (Years)'].split().getitem(0))):,.2f}AED {((finance_amount + (finance_amount * bank_rate * (int(row['Asset Term (Years)'].split().getitem(0))))) / (int(row['Asset Term (Years)'].split().getitem(0)) * 12)):,.2f}" for row in vehicle_emi_results])}
-Asset Term (Years)	Flat ROI %	Principal Loan Block	Total Interest Accrued	Monthly Vehicle EMI
+
+Asset Term (Years)
+	Flat ROI %	Principal Loan Block	Total Interest Accrued	Monthly Vehicle EMI
+
 {"Down Payment Loan Financing OptionsTermFinanced BalanceTotal InterestMonthly EMI" + "".join([f"{row['Term']}AED {dp_financed_base:,.2f}AED {float(row['Total Interest'].replace('AED ','').replace(',','')):,.2f}AED {float(row['Monthly EMI'].replace('AED ','').replace(',','')):,.2f}" for row in dp_results]) + "" if dp_results else ""}
 3. Accessories Breakdown
 {"".join([f"{item['Selected Accessories / Services']}AED {float(item['Individual Price (Base)'].replace('AED ','').replace(',','')):,.2f}" + (f"AED {float(item['VAT Amount (5%)'].replace('AED ','').replace(',','')):,.2f}" if "VAT Pre-incl" not in item['VAT Amount (5%)'] else "AED 0.00 (VAT Pre-incl.)") + f"AED {float(item['Total Cost (incl. VAT)'].replace('AED ','').replace(',','')):,.2f}" for item in addons_table_data]) if addons_table_data else "No optional accessories selected."}
-Selected Accessories / Services	Individual Price (Base)	VAT Amount (5%)	Total Cost (incl. VAT)
+
+Selected Accessories / Services
+	Individual Price (Base)	VAT Amount (5%)	Total Cost (incl. VAT)
+
 4. Out-of-Pocket Cash Outlay Summary
-Fee Description	Amount
-{upfront_label}	AED {upfront_amount:,.2f}
-Registration Documentation Fee	AED {registration_fee:,.2f}
-DP Processing Fee (DP PF)	AED {dp_processing_fee:,.2f}
-Bank Processing Fee (Bank PF)	AED {bank_processing_fee:,.2f}
+
+Fee Description
+	Amount
+{upfront_label}
+	AED {upfront_amount:,.2f}
+Registration Documentation Fee
+	AED {registration_fee:,.2f}
+DP Processing Fee (DP PF)
+	AED {dp_processing_fee:,.2f}
+Bank Processing Fee (Bank PF)
+	AED {bank_processing_fee:,.2f}
+
 Actual Upfront Cash Required at Showroom Handover
 AED {grand_total_cash_outlay:,.2f}
 
@@ -1141,4 +1164,3 @@ file_name=f"Mitsubishi_Financial_Summary_{selected_option_code}.html",
 mime="text/html",
 use_container_width=True
 )
-
