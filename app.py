@@ -312,18 +312,7 @@ VEHICLE_IMAGES = {
     "Destinator": "destinator.png.png"
 }
 
-def find_valid_image_path(filename):
-    possible_paths = [
-        os.path.join("images", filename),
-        os.path.join("Images", filename),
-        os.path.join("images", filename.replace(".png.png", ".PNG.PNG")),
-        os.path.join("Images", filename.replace(".png.png", ".PNG.PNG")),
-        filename
-    ]
-    for path in possible_paths:
-        if os.path.exists(path):
-            return path
-    return None
+fn_find_valid_image = lambda filename: next((p for p in [os.path.join("images", filename), os.path.join("Images", filename), filename] if os.path.exists(p)), None)
 
 MASTER_DATA = load_master_workbook(FILE_MASTER)
 PRICE_LIST = MASTER_DATA["price_list"]
@@ -413,12 +402,10 @@ else:
         resolved_path = None
         if lookup_name in VEHICLE_IMAGES:
             img_file = VEHICLE_IMAGES[lookup_name]
-            resolved_path = find_valid_image_path(img_file)
+            resolved_path = fn_find_valid_image(img_file)
         if resolved_path:
             caption_name = "Xpander Cross" if lookup_name == "Xpander Cross" else selected_name
             st.image(resolved_path, caption=f"Mitsubishi {caption_name}", use_container_width=True)
-        else:
-            st.sidebar.warning(f"⚠️ Image not found: '{VEHICLE_IMAGES.get(lookup_name, 'image.png')}'")
 
         st.markdown("---")
         st.subheader("🏦 Financial Provider Rates")
@@ -436,19 +423,6 @@ else:
         st.markdown("---")
         st.subheader("⚙️ Calculations Adjuster")
         base_vehicle_price = st.number_input("Base Vehicle Price (AED):", value=float(discounted_base_price), step=500.0)
-
-        applied_discount_amt = max(0.0, list_vehicle_price - base_vehicle_price)
-        if applied_discount_amt > 0:
-            max_bm_limit = max(bm_disc_a_limit, bm_disc_b_limit)
-            max_l3_limit = max(max_bm_limit, l3_upgraded_limit)
-            if max_l3_limit > 0 and applied_discount_amt > max_l3_limit:
-                st.error(f"🚨 Discount of AED {applied_discount_amt:,.2f} exceeds max L3 limit (AED {max_l3_limit:,.2f}). Special management approval required.")
-            elif max_bm_limit > 0 and applied_discount_amt > max_bm_limit:
-                st.warning(f"⚠️ Discount of AED {applied_discount_amt:,.2f} exceeds BM limit (AED {max_bm_limit:,.2f}). Requires L3 Upgraded approval (up to AED {max_l3_limit:,.2f}).")
-            elif bm_disc_a_limit > 0 and applied_discount_amt > bm_disc_a_limit:
-                st.info(f"ℹ️ Discount of AED {applied_discount_amt:,.2f} uses BM Discount B tier (Limit: AED {bm_disc_b_limit:,.2f}).")
-            elif bm_disc_a_limit > 0:
-                st.success(f"✅ Discount of AED {applied_discount_amt:,.2f} is within Permissible BM Discount A (Limit: AED {bm_disc_a_limit:,.2f}).")
 
         down_payment_pct_val = st.slider("Down Payment Percentage (%):", 0, 100, 20)
         down_payment_pct = down_payment_pct_val / 100.0
@@ -479,22 +453,19 @@ else:
                     ceramic_selected_price += price_val
                 elif "WARRANTY" in acc_name.upper():
                     warranty_selected_price += price_val
-                elif "RMC" in acc_name.upper():
-                    rmc_selected_cost += price_val
                 else:
                     acc_selected_price += price_val
                 checked_addons_list.append({"name": display_name, "price": price_val, "vat_taxable": True})
-        else:
-            st.warning("ACESSORIES sheet not found or empty.")
 
-        # Exact implementation of Excel formula:
+        # ==========================================
+        # EXACT EXCEL RMC LOGIC IMPLEMENTATION
         # IF(C16="NO", 0, XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), INDEX(RMC!$E:$H, , MATCH(TRIM(B16), RMC!$E$1:$H$1, 0))))
-        # Where B2 = Variant AS IN SAP (selected_variant_sap), B16 = chosen RMC contract code, RMC!$A:$A = column 0, RMC!$E:$H = columns 4 to 7
+        # ==========================================
         if RMC_RAW_DF is not None and not RMC_RAW_DF.empty:
             df_r = RMC_RAW_DF.copy()
             df_r.columns = [str(c).strip() for c in df_r.columns]
             
-            # Extract header options from E1:H1 (columns index 4 to 7)
+            # Row 1 headers from columns E:H (indices 4 to 7) corresponding to RMC!$E$1:$H$1
             rmc_header_keys = [str(c).strip() for c in df_r.columns[4:8]] if len(df_r.columns) >= 8 else ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
             rmc_dropdown_options = ["NO"] + rmc_header_keys
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
@@ -505,17 +476,18 @@ else:
                 
                 rmc_base_val = 0.0
                 try:
-                    # TRIM(RMC!$A:$A) equivalent: stripping column 0 values
+                    # TRIM(RMC!$A:$A) -> Column A (index 0) values cleaned with .str.strip()
                     col_a_trimmed = df_r.iloc[:, 0].astype(str).str.strip()
                     
-                    # XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), ...)
+                    # XLOOKUP exact match on TRIM(B2) against TRIM(RMC!$A:$A)
                     match_mask = col_a_trimmed.str.upper() == b2_val.upper()
                     if not match_mask.any():
-                        # Fallback case-insensitive partial match
+                        # Fallback substring match if SAP variant codes have minor formatting variances
                         match_mask = col_a_trimmed.str.upper().str.contains(b2_val.upper()) | col_a_trimmed.str.upper().str.contains(str(selected_option_code).strip().upper())
                     
                     if match_mask.any():
-                        matched_row = df_r[match_mask].iloc[0]
+                        matched_row_idx = df_r.index[match_mask][0]
+                        matched_row = df_r.loc[matched_row_idx]
                         
                         # MATCH(TRIM(B16), RMC!$E$1:$H$1, 0)
                         header_cols = [str(c).strip() for c in df_r.columns[4:8]]
@@ -525,31 +497,30 @@ else:
                                 matched_col_idx = 4 + idx
                                 break
                         
-                        # INDEX(RMC!$E:$H, , matched_col_idx)
+                        # INDEX(RMC!$E:$H, , MATCH(...))
                         if matched_col_idx is not None and len(matched_row) > matched_col_idx:
                             rmc_base_val = safe_float(matched_row.iloc[matched_col_idx])
                 except Exception as e:
                     rmc_base_val = 0.0
 
-                rmc_selected_cost += rmc_base_val * 1.05
+                # Add base value and include in accessories breakdown table
+                rmc_selected_cost += rmc_base_val
                 checked_addons_list.append({
                     "name": f"Routine Maintenance Contract ({chosen_rmc})", 
                     "price": rmc_base_val, 
                     "vat_taxable": True
                 })
 
-        # Calculate u19_valuation_base AFTER collecting all accessories and RMC costs so it includes them fully
+        # Calculate u19_valuation_base including accessories and RMC base costs before VAT multiplier
         u19_valuation_base = (base_vehicle_price + acc_selected_price + ceramic_selected_price + foppfgoldpackage_selected_price + warranty_selected_price + rmc_selected_cost) * 1.05
 
         code_clean = selected_option_code.strip()
         
-        # Apply math.ceil to round VRI up to the next full figure based on u19_valuation_base
         display_vri_price = float(math.ceil(u19_valuation_base * 3.15 * 1.05 / 100.0))
         
         if code_clean in INSURANCE_MASTER:
             ins_rule = INSURANCE_MASTER[code_clean]
             calc_ins = (u19_valuation_base * ins_rule["pct_rate"] + ins_rule["fixed_amount"]) * ins_rule["vat_multiplier"]
-            # Apply math.ceil to round Insurance up to the next full figure based on u19_valuation_base
             display_ins_price = float(math.ceil(max(calc_ins, ins_rule["min_premium"])))
         else:
             display_ins_price = 0.0
@@ -626,7 +597,7 @@ elif st.session_state.view_state == "summary":
     img_b64 = None
     if lookup_name in VEHICLE_IMAGES:
         img_file = VEHICLE_IMAGES[lookup_name]
-        resolved_path = find_valid_image_path(img_file)
+        resolved_path = fn_find_valid_image(img_file)
         if resolved_path:
             st.image(resolved_path, width=420)
             img_b64 = get_image_base64(resolved_path)
@@ -899,7 +870,7 @@ elif st.session_state.view_state == "summary":
                     padding: 1.2rem;
                     border-radius: 8px;
                     border-left: 4px solid #191919;
-                    margin-top: 1rem;
+                    margin-top: 1.0rem;
                     font-size: 0.9rem;
                 }}
                 .details-section {{
@@ -1068,7 +1039,7 @@ elif st.session_state.view_state == "summary":
                 </thead>
                 <tbody>
                     <tr><td>{upfront_label}</td><td>AED {upfront_amount:,.2f}</td></tr>
-                    <tr><td>Registration Documentation Fee</td><td>AED {registration_fee:,.2f}</td></tr>
+                    <tr><td>Registration Documentation Fee</td><td>AED {registration_field_amt if 'registration_field_amt' in locals() else registration_fee:,.2f}</td></tr>
                     <tr><td>DP Processing Fee (DP PF)</td><td>AED {dp_processing_fee:,.2f}</td></tr>
                     <tr><td>Bank Processing Fee (Bank PF)</td><td>AED {bank_processing_fee:,.2f}</td></tr>
                 </tbody>
