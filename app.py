@@ -594,13 +594,13 @@ else:
     vehicle_insurance_cost = display_ins_price if is_insurance_selected else 0.0
     vri_calculated_cost = display_vri_price if is_vri_selected else 0.0
 
-        if is_vri_selected:
+    if is_vri_selected:
             checked_addons_list.append({
                 "name": "Vehicle Replacement Insurance (VRI)",
                 "price": vri_calculated_cost,
                 "vat_taxable": False
             })
-        if is_insurance_selected:
+    if is_insurance_selected:
             checked_addons_list.append({
                 "name": "Vehicle Insurance",
                 "price": vehicle_insurance_cost,
