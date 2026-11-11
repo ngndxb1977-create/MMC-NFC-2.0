@@ -583,9 +583,7 @@ else:
 
         # Dynamic Insurance Calculation from Insurance Sheet
         code_clean = selected_option_code.strip()
-        name_clean = str(selected_name)
-        display_vri_price = u19_valuation_base * 3.15 * 1.05 / 100.0
-if code_clean in INSURANCE_MASTER:
+        if code_clean in INSURANCE_MASTER:
             ins_rule = INSURANCE_MASTER[code_clean]
             calc_ins = (u19_valuation_base * ins_rule["pct_rate"] + ins_rule["fixed_amount"]) * ins_rule["vat_multiplier"]
             display_ins_price = max(calc_ins, ins_rule["min_premium"])
