@@ -599,6 +599,11 @@ is_vri_selected = st.checkbox(
             value=False,
             key="cb_car_insurance"
         )
+        is_insurance_selected = st.checkbox(
+            f"Vehicle Insurance (+AED {display_ins_price:,.2f})",
+            value=False,
+            key="cb_car_insurance"
+        )
 
         vehicle_insurance_cost = display_ins_price if is_insurance_selected else 0.0
         vri_calculated_cost = display_vri_price if is_vri_selected else 0.0
