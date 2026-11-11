@@ -286,15 +286,15 @@ def load_master_workbook(file_path):
             rmc_entry = {}
             for col in df_rmc.columns:
                 col_upper = col.upper()
-                if "RMC" in col_upper:
+                if "RMC" in col_upper or col_upper in ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]:
                     rmc_entry[col.strip()] = safe_float(row.get(col, 0.0))
             
-            if not rmc_entry:
+            if not rmc_entry and len(df_rmc.columns) >= 8:
                 rmc_entry = {
-                    "RMC-10-40": safe_float(row.get("RMC-10-40", 0.0)),
-                    "RMC-10-60": safe_float(row.get("RMC-10-60", 0.0)),
-                    "RMC-10-70": safe_float(row.get("RMC-10-70", 0.0)),
-                    "RMC-10-100": safe_float(row.get("RMC-10-100", 0.0)),
+                    str(df_rmc.columns[4]).strip(): safe_float(row.iloc[4]),
+                    str(df_rmc.columns[5]).strip(): safe_float(row.iloc[5]),
+                    str(df_rmc.columns[6]).strip(): safe_float(row.iloc[6]),
+                    str(df_rmc.columns[7]).strip(): safe_float(row.iloc[7]),
                 }
             data["rmc"][v_code.upper()] = rmc_entry
     return data
@@ -519,10 +519,10 @@ else:
                 matched_rmc_dict = list(RMC_RULES.values())[0]
 
             rmc_keys = list(matched_rmc_dict.keys()) if matched_rmc_dict else ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"]
-            rmc_dropdown_options = ["None"] + rmc_keys
+            rmc_dropdown_options = ["NO"] + rmc_keys
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
             
-            if chosen_rmc != "None" and matched_rmc_dict:
+            if chosen_rmc != "NO" and matched_rmc_dict:
                 rmc_base_val = matched_rmc_dict.get(chosen_rmc, 0.0)
                 if rmc_base_val == 0.0:
                     for r_key, r_val in matched_rmc_dict.items():
@@ -530,7 +530,6 @@ else:
                             rmc_base_val = r_val
                             break
                 
-                # Multiply base RMC value by 1.05 to include VAT (e.g. 5,900 * 1.05 = 6,195.00)
                 rmc_total_val = rmc_base_val * 1.05
                 rmc_selected_cost += rmc_total_val
                 checked_addons_list.append({
@@ -944,7 +943,7 @@ elif st.session_state.view_state == "summary":
                     <p>Unit Selected: {selected_name} — Option {selected_option_code} ({selected_year})</p>
                 </div>
                 <div>
-                    {f'<img src="{logo_b64}" class="logo-img">' if logo_b64 else '<h3>MITSUBISHI MOTORS</h3>'}
+                    {f'<img src="{img_b64}" class="logo-img">' if img_b64 else '<h3>MITSUBISHI MOTORS</h3>'}
                 </div>
             </div>
 
@@ -963,7 +962,7 @@ elif st.session_state.view_state == "summary":
                 <div>
                     <strong>Sales Executive:</strong> {selected_sales_exec if selected_sales_exec else "N/A"}<br>
                     <strong>Executive Email:</strong> {exec_email}<br>
-                    <strong>F&I Specialist:</strong> {fixed_fi_name}
+                    <strong>F&I Specialist:</strong> {fixed_fi_name} ({fixed_fi_email})
                 </div>
             </div>
 
@@ -1080,7 +1079,7 @@ elif st.session_state.view_state == "summary":
                     <li>Labour Card / Free Zone / Employer ID.</li>
                     <li>Copy of the UAE Driver's License Both Sides.</li>
                     <li>Current Dated Salary Certificate from The Employer.</li>
-                    <li>Pay Slips For The Last 3 Months - [If Variance In Salary].</li>
+                    <li>Pay Slices For The Last 3 Months - [If Variance In Salary].</li>
                     <li>IBAN.</li>
                 </ul>
             </div>
