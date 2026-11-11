@@ -233,8 +233,6 @@ def load_master_workbook(file_path):
             if not disc_name or disc_name.lower() in ["nan", "discount name", "option code"]:
                 continue
             pct_val = safe_float(row.iloc[1], default=0.0) if len(row) > 1 else 0.0
-            if pct_val > 1.0:
-                pct_val = pct_val / 100.0
             data["discounts"][disc_name] = pct_val
 
     res_sheet = find_sheet_name(xls, ["Reservation Fees", "RESERVATION FEES"])
@@ -386,15 +384,38 @@ else:
         st.write(f"**Option Code:** {selected_option_code}")
         st.write(f"**List Price:** AED {list_vehicle_price:,.2f}")
 
-        selected_discount_name = "None"
-        discount_pct = 0.0
-        if DISCOUNT_MASTER:
-            disc_options = ["None"] + list(DISCOUNT_MASTER.keys())
-            selected_discount_name = st.selectbox("Applicable Discount:", disc_options)
-            if selected_discount_name != "None":
-                discount_pct = DISCOUNT_MASTER[selected_discount_name]
+        # ==========================================
+        # DISCOUNT LOGIC & INPUTS
+        # ==========================================
+        standard_discounts = ["None", "Esaad", "Fazaa", "Humat Alwatan", "Emirates Platinum", "Permissible-1", "Permissible-2", "Special Discount", "Custom Discount"]
+        disc_options_list = ["None"]
+        for d in standard_discounts:
+            if d != "None" and d not in disc_options_list:
+                disc_options_list.append(d)
+        for k in DISCOUNT_MASTER.keys():
+            if k not in disc_options_list:
+                disc_options_list.append(k)
 
-        discounted_base_price = list_vehicle_price * (1.0 - discount_pct)
+        selected_discount_name = st.selectbox("Applicable Discount:", disc_options_list)
+        discount_amount = 0.0
+
+        if selected_discount_name in ["Esaad", "Fazaa", "Humat Alwatan", "Emirates Platinum"]:
+            discount_amount = list_vehicle_price * 0.03
+            st.info(f"Applied 3% Discount: AED {discount_amount:,.2f}")
+        elif selected_discount_name == "Permissible-1":
+            discount_amount = 1000.0
+            st.info(f"Permissible-1 Fixed Discount: AED {discount_amount:,.2f}")
+        elif selected_discount_name == "Permissible-2":
+            discount_amount = st.number_input("Permissible-2 Discount Amount (Max AED 2,000):", value=2000.0, min_value=0.0, max_value=2000.0, step=100.0)
+        elif selected_discount_name == "Special Discount":
+            discount_amount = st.number_input("Special Discount Amount (AED):", value=3000.0, min_value=0.0, step=100.0)
+        elif selected_discount_name == "Custom Discount":
+            discount_amount = st.number_input("Custom Discount Amount (AED):", value=4000.0, min_value=0.0, step=100.0)
+        elif selected_discount_name != "None" and selected_discount_name in DISCOUNT_MASTER:
+            val = DISCOUNT_MASTER[selected_discount_name]
+            discount_amount = list_vehicle_price * val if val <= 1.0 else val
+
+        discounted_base_price = max(0.0, list_vehicle_price - discount_amount)
 
         selected_name = get_clean_model_name(selected_description)
         lookup_name = "Xpander Cross" if (selected_name == "Xpander" and str(selected_option_code).strip().upper() == "XC") else selected_name
@@ -556,9 +577,6 @@ else:
         total_vat_charges = (base_vehicle_price + acc_selected_price + ceramic_selected_price + foppfgoldpackage_selected_price + warranty_selected_price + rmc_selected_cost) * 0.05
         full_vehicle_value_including_addons = base_vehicle_price + excel_addons_total + total_vat_charges
         
-        # ==========================================
-        # CEILING ROUNDING APPLIED (MATH.CEIL)
-        # ==========================================
         calculated_downpayment = float(math.ceil(full_vehicle_value_including_addons * down_payment_pct))
         finance_amount = full_vehicle_value_including_addons - calculated_downpayment
         bank_processing_fee = float(math.ceil(finance_amount * 0.0105))
