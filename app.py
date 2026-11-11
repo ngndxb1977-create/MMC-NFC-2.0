@@ -931,7 +931,7 @@ elif st.session_state.view_state == "summary":
 
             <div class="header-container">
                 <div>
-                    <h1>Mitsubishi Financial Report</h1>
+                    <h1>Mitsubishi Finance Plan</h1>
                     <p>Unit Selected: {selected_name} — Option {selected_option_code} ({selected_year})</p>
                 </div>
                 <div>
