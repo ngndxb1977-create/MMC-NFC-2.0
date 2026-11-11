@@ -505,14 +505,14 @@ else:
         else:
             st.warning("ACESSORIES sheet not found or empty.")
 
-        if RMC_RULES and RMC_RAW_DF is not None is not None and not RMC_RAW_DF.empty:
+        if RMC_RULES and RMC_RAW_DF is not None and not RMC_RAW_DF.empty:
             rmc_header_keys = RMC_RULES.get("headers", ["RMC-10-40", "RMC-10-60", "RMC-10-70", "RMC-10-100"])
             rmc_dropdown_options = ["NO"] + rmc_header_keys
             chosen_rmc = st.selectbox("Routine Maintenance Contract (RMC):", rmc_dropdown_options)
             
             # Exact equivalent of Excel formula:
             # =IF(C16="NO", 0, XLOOKUP(TRIM(B2), TRIM(RMC!$A:$A), INDEX(RMC!$E:$H, , MATCH(TRIM(B16), RMC!$E$1:$H$1, 0))))
-            # Here B2 corresponds to Variant AS IN SAP (`selected_variant_sap`) or Option Code if preferred, matching column A of RMC sheet.
+            # Here B2 corresponds to Variant AS IN SAP (`selected_variant_sap`) matched against column A of RMC sheet.
             if chosen_rmc != "NO":
                 b2_val = str(selected_variant_sap).strip()
                 b16_val = str(chosen_rmc).strip()
@@ -520,32 +520,35 @@ else:
                 rmc_base_val = 0.0
                 try:
                     df_r = RMC_RAW_DF.copy()
-                    # Column A is index 0
                     col_a_trimmed = df_r.iloc[:, 0].astype(str).str.strip()
-                    matched_rows = df_r[col_a_trimmed.str.upper() == b2_val.upper()]
                     
-                    if matched_rows.empty:
-                        # Fallback case-insensitive partial match on column A
-                        matched_rows = df_r[col_a_trimmed.str.upper().str.contains(b2_val.upper()) | df_r.iloc[:, 0].astype(str).str.upper().str.contains(str(selected_option_code).strip().upper())]
+                    # Exact XLOOKUP matching TRIM(B2) against TRIM(RMC!$A:$A)
+                    matched_idx = df_r.index[col_a_trimmed.str.upper() == b2_val.upper()].tolist()
                     
-                    if not matched_rows.empty:
-                        target_row = matched_rows.iloc[0]
-                        # Match columns E:H headers (indices 4 to 7)
+                    if not matched_idx:
+                        # Fallback search if exact SAP code string format differs slightly
+                        matched_idx = df_r.index[col_a_trimmed.str.upper().str.contains(b2_val.upper()) | col_a_trimmed.str.upper().str.contains(str(selected_option_code).strip().upper())].tolist()
+                    
+                    if matched_idx:
+                        target_row = df_r.loc[matched_idx[0]]
+                        
+                        # MATCH(TRIM(B16), RMC!$E$1:$H$1, 0)
                         header_cols = [str(c).strip() for c in df_r.columns[4:8]]
                         matched_col_idx = None
                         for idx, h_name in enumerate(header_cols):
-                            if h_name.upper() == b16_val.upper():
+                            if h_name.strip().upper() == b16_val.upper():
                                 matched_col_idx = 4 + idx
                                 break
+                        
                         if matched_col_idx is not None and len(target_row) > matched_col_idx:
                             rmc_base_val = safe_float(target_row.iloc[matched_col_idx])
                         else:
-                            # Fallback using RMC_RULES dictionary lookup if direct column index fails
+                            # Fallback dictionary lookup if column index matching fails
                             variant_key = str(target_row.iloc[0]).strip().upper()
                             if variant_key in RMC_RULES:
                                 rmc_base_val = RMC_RULES[variant_key].get(b16_val, 0.0)
                     else:
-                        # If row lookup fails, check dictionary fallback
+                        # Fallback if row not found
                         for k, v in RMC_RULES.items():
                             if k == "headers": continue
                             if str(selected_option_code).strip().upper() in k.upper() or k.upper() in str(selected_option_code).strip().upper():
@@ -931,7 +934,7 @@ elif st.session_state.view_state == "summary":
                 .details-section {{
                     display: flex;
                     justify-content: space-between;
-      background: #F4F0EA !important;
+                    background: #F4F0EA !important;
                     padding: 12px 15px;
                     border-radius: 8px;
                     margin-bottom: 15px;
