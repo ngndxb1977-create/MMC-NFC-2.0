@@ -771,7 +771,6 @@ elif st.session_state.view_state == "summary":
         )
         upfront_label = 'Showroom Reservation Fee (Paid Upfront)' if finance_dp_option else 'Full Down Payment Amount (Upfront Out-of-Pocket)'
         upfront_amount = vehicle_reservation_fee if finance_dp_option else calculated_downpayment
-
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -959,7 +958,7 @@ elif st.session_state.view_state == "summary":
                 <button onclick="window.print()">🖨️ Save PDF / Print</button>
             </div>
 
-            <!-- ==================== PAGE 1 ==================== -->
+            <!-- Page 1 Header, Details & Section 1 -->
             <div class="header-container">
                 <div>
                     <h1>Mitsubishi Finance Plan</h1>
@@ -1028,65 +1027,63 @@ elif st.session_state.view_state == "summary":
                 </div>
             </div>
 
-            <!-- ==================== PAGE 2 ==================== -->
-            <div class="page-break">
-                <div class="section-block">
-                    <h2>2. Loan Installment Breakdowns</h2>
-                    <h3>Primary Asset Vehicle Financing</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Asset Term (Years)</th>
-                                <th>Flat ROI %</th>
-                                <th>Principal Loan Block</th>
-                                <th>Total Interest Accrued</th>
-                                <th>Monthly Vehicle EMI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {"".join([f"<tr><td>{row['Asset Term (Years)']}</td><td>{row['Flat ROI %']}</td><td>{row['Principal Loan Block']}</td><td>{row['Total Interest Accrued']}</td><td>{row['Monthly Vehicle EMI']}</td></tr>" for row in vehicle_emi_results])}
-                        </tbody>
-                    </table>
-                </div>
-
-                {f'''
-                <div class="section-block">
-                    <h3>Down Payment Loan Financing Options</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Term</th>
-                                <th>Financed Balance</th>
-                                <th>Total Interest</th>
-                                <th>Monthly EMI</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {"".join([f"<tr><td>{row['Term']}</td><td>{row['Financed Balance']}</td><td>{row['Total Interest']}</td><td>{row['Monthly EMI']}</td></tr>" for row in dp_results])}
-                        </tbody>
-                    </table>
-                </div>
-                ''' if dp_results else ""}
-
-                <div class="section-block">
-                    <h2>3. Accessories Breakdown</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Selected Accessories / Services</th>
-                                <th>Individual Price (Base)</th>
-                                <th>VAT Amount (5%)</th>
-                                <th>Total Cost (incl. VAT)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {"".join([f"<tr><td>{item['Selected Accessories / Services']}</td><td>{item['Individual Price (Base)']}</td><td>{item['VAT Amount (5%)']}</td><td>{item['Total Cost (incl. VAT)']}</td></tr>" for item in addons_table_data]) if addons_table_data else "<tr><td colspan='4'>No optional accessories selected.</td></tr>"}
-                        </tbody>
-                    </table>
-                </div>
+            <!-- Sections 2 & 3 flow naturally from Page 1 to fill blank space -->
+            <div class="section-block">
+                <h2>2. Loan Installment Breakdowns</h2>
+                <h3>Primary Asset Vehicle Financing</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asset Term (Years)</th>
+                            <th>Flat ROI %</th>
+                            <th>Principal Loan Block</th>
+                            <th>Total Interest Accrued</th>
+                            <th>Monthly Vehicle EMI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {"".join([f"<tr><td>{row['Asset Term (Years)']}</td><td>{row['Flat ROI %']}</td><td>{row['Principal Loan Block']}</td><td>{row['Total Interest Accrued']}</td><td>{row['Monthly Vehicle EMI']}</td></tr>" for row in vehicle_emi_results])}
+                    </tbody>
+                </table>
             </div>
 
-            <!-- ==================== PAGE 3 ==================== -->
+            {f'''
+            <div class="section-block">
+                <h3>Down Payment Loan Financing Options</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Term</th>
+                            <th>Financed Balance</th>
+                            <th>Total Interest</th>
+                            <th>Monthly EMI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {"".join([f"<tr><td>{row['Term']}</td><td>{row['Financed Balance']}</td><td>{row['Total Interest']}</td><td>{row['Monthly EMI']}</td></tr>" for row in dp_results])}
+                    </tbody>
+                </table>
+            </div>
+            ''' if dp_results else ""}
+
+            <div class="section-block">
+                <h2>3. Accessories Breakdown</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Selected Accessories / Services</th>
+                            <th>Individual Price (Base)</th>
+                            <th>VAT Amount (5%)</th>
+                            <th>Total Cost (incl. VAT)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {"".join([f"<tr><td>{item['Selected Accessories / Services']}</td><td>{item['Individual Price (Base)']}</td><td>{item['VAT Amount (5%)}']}</td><td>{item['Total Cost (incl. VAT)']}</td></tr>" for item in addons_table_data]) if addons_table_data else "<tr><td colspan='4'>No optional accessories selected.</td></tr>"}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Page 3: Explicit break so Section 4 & 5 start at the top of Page 3 -->
             <div class="page-break">
                 <div class="section-block">
                     <h2>4. Out-of-Pocket Cash Outlay Summary</h2>
