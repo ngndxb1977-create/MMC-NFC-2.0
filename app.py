@@ -801,11 +801,6 @@ elif st.session_state.view_state == "summary":
                     page-break-inside: avoid !important;
                     break-inside: avoid !important;
                 }}
-                .page-break {{
-                    page-break-before: always !important;
-                    break-before: page !important;
-                    padding-top: 4px;
-                }}
                 .header-container {{
                     display: flex;
                     justify-content: space-between;
@@ -958,7 +953,7 @@ elif st.session_state.view_state == "summary":
                 <button onclick="window.print()">🖨️ Save PDF / Print</button>
             </div>
 
-            <!-- Page 1 Header, Details & Section 1 -->
+            <!-- Header & Section 1 -->
             <div class="header-container">
                 <div>
                     <h1>Mitsubishi Finance Plan</h1>
@@ -1027,7 +1022,7 @@ elif st.session_state.view_state == "summary":
                 </div>
             </div>
 
-            <!-- Sections 2 & 3 flow naturally from Page 1 to fill blank space -->
+            <!-- Sections 2, 3, 4, and 5 flow naturally across pages without forced breaks -->
             <div class="section-block">
                 <h2>2. Loan Installment Breakdowns</h2>
                 <h3>Primary Asset Vehicle Financing</h3>
@@ -1083,44 +1078,41 @@ elif st.session_state.view_state == "summary":
                 </table>
             </div>
 
-            <!-- Page 3: Explicit break so Section 4 & 5 start at the top of Page 3 -->
-            <div class="page-break">
-                <div class="section-block">
-                    <h2>4. Out-of-Pocket Cash Outlay Summary</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Fee Description</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td>{upfront_label}</td><td>AED {upfront_amount:,.2f}</td></tr>
-                            <tr><td>Registration Documentation Fee</td><td>AED {registration_fee:,.2f}</td></tr>
-                            <tr><td>DP Processing Fee (DP PF)</td><td>AED {dp_processing_fee:,.2f}</td></tr>
-                            <tr><td>Bank Processing Fee (Bank PF)</td><td>AED {bank_processing_fee:,.2f}</td></tr>
-                            <tr class="total-row">
-                                <td>Actual Upfront Cash Required at Showroom Handover</td>
-                                <td>AED {grand_total_cash_outlay:,.2f}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="section-block">
+                <h2>4. Out-of-Pocket Cash Outlay Summary</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fee Description</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>{upfront_label}</td><td>AED {upfront_amount:,.2f}</td></tr>
+                        <tr><td>Registration Documentation Fee</td><td>AED {registration_fee:,.2f}</td></tr>
+                        <tr><td>DP Processing Fee (DP PF)</td><td>AED {dp_processing_fee:,.2f}</td></tr>
+                        <tr><td>Bank Processing Fee (Bank PF)</td><td>AED {bank_processing_fee:,.2f}</td></tr>
+                        <tr class="total-row">
+                            <td>Actual Upfront Cash Required at Showroom Handover</td>
+                            <td>AED {grand_total_cash_outlay:,.2f}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-                <div class="section-block">
-                    <h2>5. Application Requirements & Disclosures</h2>
-                    <div class="requirement-box">
-                        <strong>Required Documentation Checklist:</strong>
-                        <ul>
-                            <li>Passport Copy, Digital Visa & Address Page For Indian Passport, Page #44 For Philippines Passport.</li>
-                            <li>Emirates ID Card Copy Both Sides.</li>
-                            <li>Labour Card / Free Zone / Employer ID.</li>
-                            <li>Copy of the UAE Driver's License Both Sides.</li>
-                            <li>Current Dated Salary Certificate from The Employer.</li>
-                            <li>Pay Slips For The Last 3 Months - [If Variance In Salary].</li>
-                            <li>IBAN.</li>
-                        </ul>
-                    </div>
+            <div class="section-block">
+                <h2>5. Application Requirements & Disclosures</h2>
+                <div class="requirement-box">
+                    <strong>Required Documentation Checklist:</strong>
+                    <ul>
+                        <li>Passport Copy, Digital Visa & Address Page For Indian Passport, Page #44 For Philippines Passport.</li>
+                        <li>Emirates ID Card Copy Both Sides.</li>
+                        <li>Labour Card / Free Zone / Employer ID.</li>
+                        <li>Copy of the UAE Driver's License Both Sides.</li>
+                        <li>Current Dated Salary Certificate from The Employer.</li>
+                        <li>Pay Slips For The Last 3 Months - [If Variance In Salary].</li>
+                        <li>IBAN.</li>
+                    </ul>
                 </div>
             </div>
         </body>
