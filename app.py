@@ -1078,7 +1078,7 @@ elif st.session_state.view_state == "summary":
                         </tr>
                     </thead>
                     <tbody>
-                        {"".join([f"<tr><td>{item['Selected Accessories / Services']}</td><td>{item['Individual Price (Base)']}</td><td>{item['VAT Amount (5%)}']}</td><td>{item['Total Cost (incl. VAT)']}</td></tr>" for item in addons_table_data]) if addons_table_data else "<tr><td colspan='4'>No optional accessories selected.</td></tr>"}
+                        {"".join([f"<tr><td>{item['Selected Accessories / Services']}</td><td>{item['Individual Price (Base)']}</td><td>{item['VAT Amount (5%)']}</td><td>{item['Total Cost (incl. VAT)']}</td></tr>" for item in addons_table_data]) if addons_table_data else "<tr><td colspan='4'>No optional accessories selected.</td></tr>"}
                     </tbody>
                 </table>
             </div>
