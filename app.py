@@ -787,68 +787,84 @@ elif st.session_state.view_state == "summary":
                 }}
                 @page {{
                     size: A4;
-                    margin: 15mm;
+                    margin: 12mm 14mm;
                 }}
                 body {{
                     background-color: #FBF9F6 !important;
                     color: #191919 !important;
                     font-family: 'Karma', serif;
-                    font-size: 14px;
-                    line-height: 1.5;
+                    font-size: 13.5px;
+                    line-height: 1.45;
                     margin: 0;
-                    padding: 20px;
+                    padding: 15px;
                 }}
-                .header-container, .details-section, .metrics-grid, table, .requirement-box, .metric-card {{
+                .header-container, .details-section, .metrics-grid, table, .requirement-box, .metric-card, .section-block {{
                     page-break-inside: avoid !important;
                     break-inside: avoid !important;
+                }}
+                .page-break {{
+                    page-break-before: always !important;
+                    break-before: page !important;
+                    padding-top: 4px;
                 }}
                 .header-container {{
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     border-bottom: 2px solid #383838;
-                    padding-bottom: 15px;
-                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    margin-bottom: 12px;
                 }}
                 .logo-img {{
-                    max-height: 50px;
+                    max-height: 45px;
                 }}
                 .vehicle-img {{
-                    max-width: 250px;
+                    max-width: 210px;
                     height: auto;
                     display: block;
-                    margin: 10px auto;
+                    margin: 6px auto;
                 }}
                 h1 {{
                     font-family: 'Quicksand', sans-serif;
                     font-weight: 700;
-                    font-size: 1.8rem;
+                    font-size: 1.7rem;
                     color: #191919;
                     margin: 0;
                 }}
-                h2, h3 {{
+                h2 {{
                     font-family: 'Amethysta', serif;
                     font-weight: 400;
                     color: #383838;
-                    margin-top: 1.2rem;
-                    font-size: 1.3rem;
+                    margin-top: 0.8rem;
+                    margin-bottom: 0.5rem;
+                    font-size: 1.25rem;
+                    border-bottom: 1px solid #E2DDD5;
+                    padding-bottom: 4px;
+                }}
+                h3 {{
+                    font-family: 'Amethysta', serif;
+                    font-weight: 400;
+                    color: #383838;
+                    margin-top: 0.7rem;
+                    margin-bottom: 0.4rem;
+                    font-size: 1.1rem;
                 }}
                 table {{
                     width: 100%;
                     border-collapse: collapse;
-                    margin-top: 10px;
-                    margin-bottom: 15px;
+                    margin-top: 6px;
+                    margin-bottom: 12px;
                     background-color: #FFFFFF !important;
                     border-radius: 8px;
                     overflow: hidden;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
                 }}
                 th, td {{
-                    padding: 10px 12px;
+                    padding: 8px 10px;
                     text-align: left;
                     border-bottom: 1px solid #EFECE6;
                     font-family: 'Karma', serif;
-                    font-size: 0.9rem;
+                    font-size: 0.88rem;
                 }}
                 th {{
                     background-color: #F4F0EA !important;
@@ -856,46 +872,60 @@ elif st.session_state.view_state == "summary":
                     font-weight: 600;
                     color: #191919;
                 }}
+                tr.total-row td {{
+                    background-color: #F4F0EA !important;
+                    font-weight: 700;
+                    border-top: 1.5px solid #383838;
+                    color: #191919;
+                }}
                 .metrics-grid {{
                     display: flex;
-                    gap: 15px;
-                    margin-bottom: 15px;
+                    gap: 12px;
+                    margin-top: 8px;
+                    margin-bottom: 10px;
                 }}
                 .metric-card {{
                     background-color: #F4F0EA !important;
-                    padding: 15px;
+                    padding: 12px;
                     border-radius: 8px;
                     flex: 1;
                     border-left: 4px solid #191919;
                 }}
                 .metric-label {{
                     font-family: 'Quicksand', sans-serif;
-                    font-size: 0.85rem;
+                    font-size: 0.82rem;
                     font-weight: 600;
                     color: #555555;
-                    margin-bottom: 5px;
+                    margin-bottom: 4px;
                 }}
                 .metric-val {{
                     font-family: 'Amethysta', serif;
-                    font-size: 1.4rem;
+                    font-size: 1.3rem;
                     color: #191919;
                 }}
                 .requirement-box {{
                     background-color: #F4F0EA !important;
-                    padding: 1.2rem;
+                    padding: 1.1rem 1.2rem;
                     border-radius: 8px;
                     border-left: 4px solid #191919;
-                    margin-top: 1.0rem;
+                    margin-top: 0.8rem;
                     font-size: 0.9rem;
+                }}
+                .requirement-box ul {{
+                    margin: 8px 0 0 0;
+                    padding-left: 1.25rem;
+                }}
+                .requirement-box li {{
+                    margin-bottom: 5px;
                 }}
                 .details-section {{
                     display: flex;
                     justify-content: space-between;
                     background: #F4F0EA !important;
-                    padding: 12px 15px;
+                    padding: 10px 14px;
                     border-radius: 8px;
-                    margin-bottom: 15px;
-                    font-size: 0.9rem;
+                    margin-bottom: 10px;
+                    font-size: 0.88rem;
                 }}
                 .action-bar {{
                     position: fixed;
@@ -929,17 +959,18 @@ elif st.session_state.view_state == "summary":
                 <button onclick="window.print()">🖨️ Save PDF / Print</button>
             </div>
 
+            <!-- ==================== PAGE 1 ==================== -->
             <div class="header-container">
                 <div>
                     <h1>Mitsubishi Finance Plan</h1>
-                    <p>Unit Selected: {selected_name} — Option {selected_option_code} ({selected_year})</p>
+                    <p style="margin: 4px 0 0 0;">Unit Selected: {selected_name} — Option {selected_option_code} ({selected_year})</p>
                 </div>
                 <div>
                     {f'<img src="{logo_b64}" class="logo-img">' if logo_b64 else '<h3>MITSUBISHI MOTORS</h3>'}
                 </div>
             </div>
 
-            {f'<div style="text-align: center; margin-bottom: 15px;"><img src="{img_b64}" class="vehicle-img"></div>' if img_b64 else ''}
+            {f'<div style="text-align: center; margin-bottom: 8px;"><img src="{img_b64}" class="vehicle-img"></div>' if img_b64 else ''}
 
             <div class="details-section">
                 <div><strong>Financial Institution:</strong> {selected_bank}</div>
@@ -960,118 +991,140 @@ elif st.session_state.view_state == "summary":
                 </div>
             </div>
 
-            <h2>1. Base Vehicle Price & Tax Breakdown</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Vehicle Model / Variant</th>
-                        <th>Base Unit Price (Excl. VAT)</th>
-                        <th>VAT (5%)</th>
-                        <th>Total Unit Price (Incl. VAT)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{selected_name} ({selected_option_code})</td>
-                        <td>AED {base_vehicle_price:,.2f}</td>
-                        <td>AED {base_vehicle_vat:,.2f}</td>
-                        <td>AED {total_base_vehicle_price:,.2f}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="section-block">
+                <h2>1. Base Vehicle Price & Tax Breakdown</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Vehicle Model / Variant</th>
+                            <th>Base Unit Price (Excl. VAT)</th>
+                            <th>VAT (5%)</th>
+                            <th>Total Unit Price (Incl. VAT)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{selected_name} ({selected_option_code})</td>
+                            <td>AED {base_vehicle_price:,.2f}</td>
+                            <td>AED {base_vehicle_vat:,.2f}</td>
+                            <td>AED {total_base_vehicle_price:,.2f}</td>
+                        </tr>
+                    </tbody>
+                </table>
 
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-label">Total Vehicle Value (incl. Addons)</div>
-                    <div class="metric-val">AED {full_vehicle_value_including_addons:,.2f}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Gross Down Payment Req.</div>
-                    <div class="metric-val">AED {calculated_downpayment:,.2f}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Vehicle Finance Amount</div>
-                    <div class="metric-val">AED {finance_amount:,.2f}</div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Vehicle Value (incl. Addons)</div>
+                        <div class="metric-val">AED {full_vehicle_value_including_addons:,.2f}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Gross Down Payment Req.</div>
+                        <div class="metric-val">AED {calculated_downpayment:,.2f}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Vehicle Finance Amount</div>
+                        <div class="metric-val">AED {finance_amount:,.2f}</div>
+                    </div>
                 </div>
             </div>
 
-            <h2>2. Loan Installment Breakdowns</h2>
-            <h3>Primary Asset Vehicle Financing</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Asset Term (Years)</th>
-                        <th>Flat ROI %</th>
-                        <th>Principal Loan Block</th>
-                        <th>Total Interest Accrued</th>
-                        <th>Monthly Vehicle EMI</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {"".join([f"<tr><td>{row['Asset Term (Years)']}</td><td>{row['Flat ROI %']}</td><td>{row['Principal Loan Block']}</td><td>{row['Total Interest Accrued']}</td><td>{row['Monthly Vehicle EMI']}</td></tr>" for row in vehicle_emi_results])}
-                </tbody>
-            </table>
+            <!-- ==================== PAGE 2 ==================== -->
+            <div class="page-break">
+                <div class="section-block">
+                    <h2>2. Loan Installment Breakdowns</h2>
+                    <h3>Primary Asset Vehicle Financing</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Asset Term (Years)</th>
+                                <th>Flat ROI %</th>
+                                <th>Principal Loan Block</th>
+                                <th>Total Interest Accrued</th>
+                                <th>Monthly Vehicle EMI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {"".join([f"<tr><td>{row['Asset Term (Years)']}</td><td>{row['Flat ROI %']}</td><td>{row['Principal Loan Block']}</td><td>{row['Total Interest Accrued']}</td><td>{row['Monthly Vehicle EMI']}</td></tr>" for row in vehicle_emi_results])}
+                        </tbody>
+                    </table>
+                </div>
 
-            {f'''
-            <h3>Down Payment Loan Financing Options</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Term</th>
-                        <th>Financed Balance</th>
-                        <th>Total Interest</th>
-                        <th>Monthly EMI</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {"".join([f"<tr><td>{row['Term']}</td><td>{row['Financed Balance']}</td><td>{row['Total Interest']}</td><td>{row['Monthly EMI']}</td></tr>" for row in dp_results])}
-                </tbody>
-            </table>
-            ''' if dp_results else ""}
+                {f'''
+                <div class="section-block">
+                    <h3>Down Payment Loan Financing Options</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Term</th>
+                                <th>Financed Balance</th>
+                                <th>Total Interest</th>
+                                <th>Monthly EMI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {"".join([f"<tr><td>{row['Term']}</td><td>{row['Financed Balance']}</td><td>{row['Total Interest']}</td><td>{row['Monthly EMI']}</td></tr>" for row in dp_results])}
+                        </tbody>
+                    </table>
+                </div>
+                ''' if dp_results else ""}
 
-            <h2>3. Accessories Breakdown</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Selected Accessories / Services</th>
-                        <th>Individual Price (Base)</th>
-                        <th>VAT Amount (5%)</th>
-                        <th>Total Cost (incl. VAT)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {"".join([f"<tr><td>{item['Selected Accessories / Services']}</td><td>{item['Individual Price (Base)']}</td><td>{item['VAT Amount (5%)']}</td><td>{item['Total Cost (incl. VAT)']}</td></tr>" for item in addons_table_data]) if addons_table_data else "<tr><td colspan='4'>No optional accessories selected.</td></tr>"}
-                </tbody>
-            </table>
+                <div class="section-block">
+                    <h2>3. Accessories Breakdown</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Selected Accessories / Services</th>
+                                <th>Individual Price (Base)</th>
+                                <th>VAT Amount (5%)</th>
+                                <th>Total Cost (incl. VAT)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {"".join([f"<tr><td>{item['Selected Accessories / Services']}</td><td>{item['Individual Price (Base)']}</td><td>{item['VAT Amount (5%)']}</td><td>{item['Total Cost (incl. VAT)']}</td></tr>" for item in addons_table_data]) if addons_table_data else "<tr><td colspan='4'>No optional accessories selected.</td></tr>"}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-            <h2>4. Out-of-Pocket Cash Outlay Summary</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fee Description</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>{upfront_label}</td><td>AED {upfront_amount:,.2f}</td></tr>
-                    <tr><td>Registration Documentation Fee</td><td>AED {registration_fee:,.2f}</td></tr>
-                    <tr><td>DP Processing Fee (DP PF)</td><td>AED {dp_processing_fee:,.2f}</td></tr>
-                    <tr><td>Bank Processing Fee (Bank PF)</td><td>AED {bank_processing_fee:,.2f}</td></tr>
-                </tbody>
-            </table>
+            <!-- ==================== PAGE 3 ==================== -->
+            <div class="page-break">
+                <div class="section-block">
+                    <h2>4. Out-of-Pocket Cash Outlay Summary</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fee Description</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>{upfront_label}</td><td>AED {upfront_amount:,.2f}</td></tr>
+                            <tr><td>Registration Documentation Fee</td><td>AED {registration_fee:,.2f}</td></tr>
+                            <tr><td>DP Processing Fee (DP PF)</td><td>AED {dp_processing_fee:,.2f}</td></tr>
+                            <tr><td>Bank Processing Fee (Bank PF)</td><td>AED {bank_processing_fee:,.2f}</td></tr>
+                            <tr class="total-row">
+                                <td>Actual Upfront Cash Required at Showroom Handover</td>
+                                <td>AED {grand_total_cash_outlay:,.2f}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-            <h2>5. Application Requirements & Disclosures</h2>
-            <div class="requirement-box">
-                <strong>Required Documentation Checklist:</strong>
-                <ul>
-                    <li>Passport Copy, Digital Visa & Address Page For Indian Passport, Page #44 For Philippines Passport.</li>
-                    <li>Emirates ID Card Copy Both Sides.</li>
-                    <li>Labour Card / Free Zone / Employer ID.</li>
-                    <li>Copy of the UAE Driver's License Both Sides.</li>
-                    <li>Current Dated Salary Certificate from The Employer.</li>
-                    <li>Pay Slips For The Last 3 Months - [If Variance In Salary].</li>
-                    <li>IBAN.</li>
-                </ul>
+                <div class="section-block">
+                    <h2>5. Application Requirements & Disclosures</h2>
+                    <div class="requirement-box">
+                        <strong>Required Documentation Checklist:</strong>
+                        <ul>
+                            <li>Passport Copy, Digital Visa & Address Page For Indian Passport, Page #44 For Philippines Passport.</li>
+                            <li>Emirates ID Card Copy Both Sides.</li>
+                            <li>Labour Card / Free Zone / Employer ID.</li>
+                            <li>Copy of the UAE Driver's License Both Sides.</li>
+                            <li>Current Dated Salary Certificate from The Employer.</li>
+                            <li>Pay Slips For The Last 3 Months - [If Variance In Salary].</li>
+                            <li>IBAN.</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </body>
         </html>
